@@ -15,10 +15,6 @@
     <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
     <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
     
-    <!-- ملفات CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/responsive.css">
-    
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     
@@ -35,6 +31,807 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="theme-color" content="#3b82f6">
+    
+    <style>
+        /* إضافة أنماط أساسية */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8fafc;
+            line-height: 1.6;
+        }
+        
+        /* شاشة التحميل */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* النوافذ المنبثقة */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-header {
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: center;
+            position: relative;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            font-family: inherit;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .demo-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .demo-info small {
+            color: #0369a1;
+        }
+        
+        /* التطبيق الرئيسي */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+        
+        .app-container.authenticated {
+            display: grid;
+            grid-template-areas: 
+                "header header"
+                "sidebar main";
+            grid-template-columns: 250px 1fr;
+            grid-template-rows: 60px 1fr;
+        }
+        
+        /* الشريط العلوي */
+        .header {
+            grid-area: header;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        
+        .app-title {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .search-container {
+            position: relative;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 40px 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .btn-icon {
+            position: relative;
+            padding: 8px;
+            background: none;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #6b7280;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-icon:hover {
+            background: #f3f4f6;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+        }
+        
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            display: none;
+            z-index: 100;
+        }
+        
+        .user-dropdown.active {
+            display: block;
+        }
+        
+        .user-info {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .user-email {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            color: #374151;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background: #f3f4f6;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+        
+        /* الشريط الجانبي */
+        .sidebar {
+            grid-area: sidebar;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 24px 0;
+        }
+        
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: #6b7280;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: #f3f4f6;
+            color: #3b82f6;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            right: 24px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        /* المحتوى الرئيسي */
+        .main-content {
+            grid-area: main;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .view {
+            display: none;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        .view-header {
+            margin-bottom: 24px;
+        }
+        
+        .view-header h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .view-header p {
+            margin: 0;
+            color: #6b7280;
+        }
+        
+        .view-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        /* لوحة التحكم */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: #f0f9ff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 20px;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .stat-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .dashboard-section {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .view-all-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .view-all-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* الفلاتر */
+        .view-filters {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .filter-group {
+            min-width: 150px;
+        }
+        
+        /* بطاقات المشاريع */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 24px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .project-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+        
+        .project-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .project-priority {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .priority-high {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .priority-medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .priority-low {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        .project-description {
+            color: #6b7280;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        
+        .project-dates {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* قائمة المهام */
+        .tasks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .task-item {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .task-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .task-content {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            color: #1f2937;
+            margin: 0 0 4px 0;
+        }
+        
+        .task-meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .task-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        
+        .status-in-progress {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .status-completed {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        
+        /* التنبيهات */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+        }
+        
+        .notification {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .notification-success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .notification-error {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .notification-info {
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .notification-content {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            margin-right: 8px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* زر إعادة تعيين البيانات */
+        .reset-data-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s;
+            z-index: 1000;
+        }
+        
+        .reset-data-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+        
+        /* استجابة للجوال */
+        @media (max-width: 768px) {
+            .app-container.authenticated {
+                grid-template-areas: 
+                    "header"
+                    "main";
+                grid-template-columns: 1fr;
+                grid-template-rows: 60px 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .view-filters {
+                flex-direction: column;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- شاشة التحميل -->
@@ -67,7 +864,7 @@
                 
                 <div class="header-right">
                     <div class="header-actions">
-                        <button class="btn btn-icon" title="التنبيهات">
+                        <button class="btn-icon" title="التنبيهات">
                             <i class="fas fa-bell"></i>
                             <span class="notification-badge">3</span>
                         </button>
@@ -86,16 +883,16 @@
                                     <i class="fas fa-user-cog"></i>
                                     إعدادات الحساب
                                 </a>
-                                <a href="#" class="dropdown-item" onclick="app.exportData()">
+                                <a href="#" class="dropdown-item" onclick="exportData()">
                                     <i class="fas fa-download"></i>
                                     تصدير البيانات
                                 </a>
-                                <a href="#" class="dropdown-item" onclick="app.showAbout()">
+                                <a href="#" class="dropdown-item" onclick="showAbout()">
                                     <i class="fas fa-info-circle"></i>
                                     حول التطبيق
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a href="#" class="dropdown-item" onclick="auth.handleLogout()">
+                                <a href="#" class="dropdown-item" onclick="handleLogout()">
                                     <i class="fas fa-sign-out-alt"></i>
                                     تسجيل الخروج
                                 </a>
@@ -111,31 +908,31 @@
             <nav class="sidebar-nav">
                 <ul class="nav-list">
                     <li class="nav-item">
-                        <a href="#" class="nav-link active" data-view="dashboard">
+                        <a href="#" class="nav-link active" data-view="dashboard" onclick="showView('dashboard')">
                             <i class="fas fa-tachometer-alt"></i>
                             <span>لوحة التحكم</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-view="projects">
+                        <a href="#" class="nav-link" data-view="projects" onclick="showView('projects')">
                             <i class="fas fa-folder-open"></i>
                             <span>المشاريع</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-view="tasks">
+                        <a href="#" class="nav-link" data-view="tasks" onclick="showView('tasks')">
                             <i class="fas fa-tasks"></i>
                             <span>المهام</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-view="gantt">
+                        <a href="#" class="nav-link" data-view="gantt" onclick="showView('gantt')">
                             <i class="fas fa-chart-gantt"></i>
                             <span>مخطط جانت</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link" data-view="team">
+                        <a href="#" class="nav-link" data-view="team" onclick="showView('team')">
                             <i class="fas fa-users"></i>
                             <span>الفريق</span>
                         </a>
@@ -205,24 +1002,24 @@
                     <div class="dashboard-section">
                         <div class="section-header">
                             <h3>المشاريع الحديثة</h3>
-                            <a href="#" class="view-all-link" onclick="app.showView('projects')">
+                            <a href="#" class="view-all-link" onclick="showView('projects')">
                                 عرض الكل <i class="fas fa-arrow-left"></i>
                             </a>
                         </div>
                         <div id="recent-projects" class="projects-grid">
-                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                            <p>لا توجد مشاريع حتى الآن. <a href="#" onclick="showView('projects')">أضف مشروعك الأول</a></p>
                         </div>
                     </div>
                     
                     <div class="dashboard-section">
                         <div class="section-header">
                             <h3>المهام القادمة</h3>
-                            <a href="#" class="view-all-link" onclick="app.showView('tasks')">
+                            <a href="#" class="view-all-link" onclick="showView('tasks')">
                                 عرض الكل <i class="fas fa-arrow-left"></i>
                             </a>
                         </div>
                         <div id="upcoming-tasks-list" class="tasks-list">
-                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                            <p>لا توجد مهام قادمة.</p>
                         </div>
                     </div>
                 </div>
@@ -233,7 +1030,7 @@
                 <div class="view-header">
                     <h2>المشاريع</h2>
                     <div class="view-actions">
-                        <button class="btn btn-primary" onclick="projects.showAddProjectModal()">
+                        <button class="btn btn-primary" onclick="showAddProjectModal()">
                             <i class="fas fa-plus"></i>
                             مشروع جديد
                         </button>
@@ -260,7 +1057,7 @@
                 </div>
                 
                 <div id="projects-list" class="projects-grid">
-                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                    <p>لا توجد مشاريع حتى الآن.</p>
                 </div>
             </div>
 
@@ -269,7 +1066,7 @@
                 <div class="view-header">
                     <h2>المهام</h2>
                     <div class="view-actions">
-                        <button class="btn btn-primary" onclick="tasks.showAddTaskModal()">
+                        <button class="btn btn-primary" onclick="showAddTaskModal()">
                             <i class="fas fa-plus"></i>
                             مهمة جديدة
                         </button>
@@ -294,7 +1091,7 @@
                 </div>
                 
                 <div id="tasks-list" class="tasks-list">
-                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                    <p>لا توجد مهام حتى الآن.</p>
                 </div>
             </div>
 
@@ -309,25 +1106,25 @@
                             </select>
                         </div>
                         <div class="gantt-controls">
-                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.zoomIn()" title="تكبير">
+                            <button class="btn btn-sm btn-secondary" onclick="ganttZoomIn()" title="تكبير">
                                 <i class="fas fa-search-plus"></i>
                             </button>
-                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.zoomOut()" title="تصغير">
+                            <button class="btn btn-sm btn-secondary" onclick="ganttZoomOut()" title="تصغير">
                                 <i class="fas fa-search-minus"></i>
                             </button>
-                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.resetZoom()" title="إعادة تعيين">
+                            <button class="btn btn-sm btn-secondary" onclick="ganttResetZoom()" title="إعادة تعيين">
                                 <i class="fas fa-expand-arrows-alt"></i>
                             </button>
                         </div>
-                        <button class="btn btn-secondary" onclick="ganttManager.exportToPNG()">
+                        <button class="btn btn-secondary" onclick="ganttExportToPNG()">
                             <i class="fas fa-download"></i>
                             تصدير PNG
                         </button>
                     </div>
                 </div>
                 
-                <div id="gantt_here" class="gantt-container">
-                    <!-- سيتم ملؤه بواسطة مكتبة جانت -->
+                <div id="gantt_here" class="gantt-container" style="height: 400px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280;">
+                    <p>سيتم عرض مخطط جانت هنا عند إضافة مشاريع ومهام</p>
                 </div>
             </div>
 
@@ -336,7 +1133,7 @@
                 <div class="view-header">
                     <h2>إدارة الفريق</h2>
                     <div class="view-actions">
-                        <button class="btn btn-primary" id="invite-member-btn">
+                        <button class="btn btn-primary" onclick="showInviteMemberModal()">
                             <i class="fas fa-user-plus"></i>
                             دعوة عضو
                         </button>
@@ -344,20 +1141,28 @@
                 </div>
                 
                 <div class="team-stats">
-                    <div class="team-stat">
-                        <i class="fas fa-users"></i>
-                        <span id="active-members-count">1</span>
-                        <small>عضو نشط</small>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="active-members-count">1</div>
+                            <div class="stat-label">عضو نشط</div>
+                        </div>
                     </div>
-                    <div class="team-stat">
-                        <i class="fas fa-clock"></i>
-                        <span id="pending-invites-count">0</span>
-                        <small>دعوة معلقة</small>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="pending-invites-count">0</div>
+                            <div class="stat-label">دعوة معلقة</div>
+                        </div>
                     </div>
                 </div>
                 
                 <div id="team-members" class="team-grid">
-                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                    <p>أنت العضو الوحيد في الفريق حالياً.</p>
                 </div>
             </div>
         </main>
@@ -385,7 +1190,7 @@
                         <i class="fas fa-sign-in-alt"></i>
                         تسجيل الدخول
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="auth.showRegisterModal()">
+                    <button type="button" class="btn btn-secondary" onclick="showRegisterModal()">
                         إنشاء حساب جديد
                     </button>
                 </div>
@@ -424,7 +1229,7 @@
                         <i class="fas fa-user-plus"></i>
                         إنشاء الحساب
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="auth.showLoginModal()">
+                    <button type="button" class="btn btn-secondary" onclick="showLoginModal()">
                         لديك حساب؟ سجل الدخول
                     </button>
                 </div>
@@ -437,7 +1242,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>إضافة مشروع جديد</h3>
-                <button class="modal-close" onclick="projects.hideModal('add-project-modal')">
+                <button class="modal-close" onclick="hideModal('add-project-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -479,7 +1284,7 @@
                         <i class="fas fa-plus"></i>
                         إضافة المشروع
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('add-project-modal')">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal('add-project-modal')">
                         إلغاء
                     </button>
                 </div>
@@ -492,7 +1297,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>إضافة مهمة جديدة</h3>
-                <button class="modal-close" onclick="projects.hideModal('add-task-modal')">
+                <button class="modal-close" onclick="hideModal('add-task-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -544,7 +1349,7 @@
                         <i class="fas fa-plus"></i>
                         إضافة المهمة
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('add-task-modal')">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal('add-task-modal')">
                         إلغاء
                     </button>
                 </div>
@@ -557,7 +1362,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>دعوة عضو جديد</h3>
-                <button class="modal-close" onclick="projects.hideModal('invite-member-modal')">
+                <button class="modal-close" onclick="hideModal('invite-member-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -574,18 +1379,12 @@
                         <option value="admin">مدير - صلاحيات كاملة</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>المشاريع المسموحة</label>
-                    <div id="member-projects" class="checkbox-group">
-                        <!-- سيتم ملؤها بواسطة JavaScript -->
-                    </div>
-                </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-paper-plane"></i>
                         إرسال الدعوة
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('invite-member-modal')">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal('invite-member-modal')">
                         إلغاء
                     </button>
                 </div>
@@ -596,120 +1395,641 @@
     <!-- حاوية التنبيهات -->
     <div id="notification-container" class="notification-container"></div>
 
-    <!-- طبقة التراكب للجوال -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <!-- زر إعادة تعيين البيانات -->
+    <button class="reset-data-btn" onclick="resetAllData()" title="إعادة تعيين جميع البيانات">
+        <i class="fas fa-trash"></i>
+    </button>
 
-    <!-- ملفات JavaScript -->
-    <script src="js/utils.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/projects.js"></script>
-    <script src="js/tasks.js"></script>
-    <script src="js/gantt.js"></script>
-    <script src="js/notifications.js"></script>
-    <script src="js/team.js"></script>
-    <script src="js/app.js"></script>
-    
-    <!-- تسجيل Service Worker للـ PWA -->
+    <!-- JavaScript للتحكم في التطبيق -->
     <script>
-        // تسجيل Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                        
-                        // التحقق من وجود تحديث
-                        registration.addEventListener('updatefound', function() {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', function() {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // إشعار المستخدم بوجود تحديث
-                                    if (window.notifications) {
-                                        notifications.show('تحديث جديد متاح! أعد تحميل الصفحة للحصول على أحدث الميزات.', 'info', {
-                                            persistent: true,
-                                            actions: [
-                                                { id: 'reload', label: 'إعادة تحميل' },
-                                                { id: 'dismiss', label: 'لاحقاً' }
-                                            ]
-                                        });
-                                    }
-                                }
-                            });
-                        });
-                    })
-                    .catch(function(error) {
-                        console.log('Service Worker registration failed:', error);
-                    });
+        // متغيرات عامة
+        let isAuthenticated = false;
+        let currentUser = null;
+        let resourcesLoaded = 0;
+        let totalResources = 3;
+        let projects = [];
+        let tasks = [];
+
+        // تتبع تحميل الموارد
+        function checkResourcesLoaded() {
+            resourcesLoaded++;
+            if (resourcesLoaded >= totalResources) {
+                hideLoadingScreen();
+            }
+        }
+
+        // إخفاء شاشة التحميل
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.classList.add('hidden');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+                checkAuthStatus();
+            }, 500);
+        }
+
+        // التحقق من تحميل الموارد
+        document.addEventListener('DOMContentLoaded', function() {
+            // التحقق من تحميل Font Awesome
+            const fontAwesome = document.querySelector('link[href*="font-awesome"]');
+            if (fontAwesome) {
+                fontAwesome.onload = checkResourcesLoaded;
+                fontAwesome.onerror = checkResourcesLoaded;
+            } else {
+                checkResourcesLoaded();
+            }
+
+            // التحقق من تحميل Google Fonts
+            const googleFonts = document.querySelector('link[href*="fonts.googleapis.com"]');
+            if (googleFonts) {
+                googleFonts.onload = checkResourcesLoaded;
+                googleFonts.onerror = checkResourcesLoaded;
+            } else {
+                checkResourcesLoaded();
+            }
+
+            // التحقق من تحميل مكتبة Gantt
+            if (typeof gantt !== 'undefined') {
+                checkResourcesLoaded();
+            } else {
+                setTimeout(checkResourcesLoaded, 1000);
+            }
+
+            // إخفاء شاشة التحميل بعد 3 ثوان كحد أقصى
+            setTimeout(() => {
+                if (resourcesLoaded < totalResources) {
+                    hideLoadingScreen();
+                }
+            }, 3000);
+        });
+
+        // التحقق من حالة المصادقة
+        function checkAuthStatus() {
+            const userData = localStorage.getItem('userData');
+            
+            if (userData) {
+                currentUser = JSON.parse(userData);
+                isAuthenticated = true;
+                loadData();
+                showApp();
+                updateUserInfo();
+                updateDashboard();
+            } else {
+                showLoginModal();
+            }
+        }
+
+        // تحميل البيانات من localStorage
+        function loadData() {
+            const savedProjects = localStorage.getItem('projects');
+            const savedTasks = localStorage.getItem('tasks');
+            
+            if (savedProjects) {
+                projects = JSON.parse(savedProjects);
+            }
+            
+            if (savedTasks) {
+                tasks = JSON.parse(savedTasks);
+            }
+        }
+
+        // حفظ البيانات في localStorage
+        function saveData() {
+            localStorage.setItem('projects', JSON.stringify(projects));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        // إظهار التطبيق الرئيسي
+        function showApp() {
+            document.getElementById('app').classList.add('authenticated');
+            setupEventListeners();
+        }
+
+        // إخفاء التطبيق الرئيسي
+        function hideApp() {
+            document.getElementById('app').classList.remove('authenticated');
+        }
+
+        // إعداد مستمعي الأحداث
+        function setupEventListeners() {
+            // قائمة المستخدم
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            const userDropdown = document.getElementById('user-dropdown');
+            
+            if (userMenuBtn && userDropdown) {
+                userMenuBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('active');
+                });
+
+                document.addEventListener('click', function() {
+                    userDropdown.classList.remove('active');
+                });
+            }
+
+            // معالجة النماذج
+            setupFormHandlers();
+        }
+
+        // إعداد معالجات النماذج
+        function setupFormHandlers() {
+            // نموذج إضافة مشروع
+            const addProjectForm = document.getElementById('add-project-form');
+            if (addProjectForm) {
+                addProjectForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    addProject();
+                });
+            }
+
+            // نموذج إضافة مهمة
+            const addTaskForm = document.getElementById('add-task-form');
+            if (addTaskForm) {
+                addTaskForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    addTask();
+                });
+            }
+
+            // نموذج دعوة عضو
+            const inviteMemberForm = document.getElementById('invite-member-form');
+            if (inviteMemberForm) {
+                inviteMemberForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const email = document.getElementById('member-email').value;
+                    showNotification(`تم إرسال دعوة إلى ${email}`, 'success');
+                    hideModal('invite-member-modal');
+                    inviteMemberForm.reset();
+                });
+            }
+        }
+
+        // إضافة مشروع جديد
+        function addProject() {
+            const name = document.getElementById('project-name').value;
+            const description = document.getElementById('project-description').value;
+            const startDate = document.getElementById('project-start-date').value;
+            const endDate = document.getElementById('project-end-date').value;
+            const priority = document.getElementById('project-priority').value;
+            const color = document.getElementById('project-color').value;
+
+            const project = {
+                id: Date.now(),
+                name: name,
+                description: description,
+                startDate: startDate,
+                endDate: endDate,
+                priority: priority,
+                color: color,
+                status: 'active',
+                createdAt: new Date().toISOString()
+            };
+
+            projects.push(project);
+            saveData();
+            updateDashboard();
+            renderProjects();
+            updateTaskProjectOptions();
+
+            showNotification(`تم إضافة المشروع "${name}" بنجاح!`, 'success');
+            hideModal('add-project-modal');
+            document.getElementById('add-project-form').reset();
+        }
+
+        // إضافة مهمة جديدة
+        function addTask() {
+            const projectId = document.getElementById('task-project').value;
+            const name = document.getElementById('task-name').value;
+            const description = document.getElementById('task-description').value;
+            const startDate = document.getElementById('task-start-date').value;
+            const endDate = document.getElementById('task-end-date').value;
+            const priority = document.getElementById('task-priority').value;
+            const status = document.getElementById('task-status').value;
+
+            if (!projectId) {
+                showNotification('يرجى اختيار مشروع للمهمة', 'error');
+                return;
+            }
+
+            const task = {
+                id: Date.now(),
+                projectId: parseInt(projectId),
+                name: name,
+                description: description,
+                startDate: startDate,
+                endDate: endDate,
+                priority: priority,
+                status: status,
+                createdAt: new Date().toISOString()
+            };
+
+            tasks.push(task);
+            saveData();
+            updateDashboard();
+            renderTasks();
+
+            showNotification(`تم إضافة المهمة "${name}" بنجاح!`, 'success');
+            hideModal('add-task-modal');
+            document.getElementById('add-task-form').reset();
+        }
+
+        // تحديث لوحة التحكم
+        function updateDashboard() {
+            document.getElementById('total-projects').textContent = projects.length;
+            document.getElementById('total-tasks').textContent = tasks.length;
+            
+            const completedTasks = tasks.filter(task => task.status === 'completed').length;
+            document.getElementById('completed-tasks').textContent = completedTasks;
+            
+            const overdueTasks = tasks.filter(task => {
+                const endDate = new Date(task.endDate);
+                const today = new Date();
+                return endDate < today && task.status !== 'completed';
+            }).length;
+            document.getElementById('overdue-tasks').textContent = overdueTasks;
+
+            renderRecentProjects();
+            renderUpcomingTasks();
+        }
+
+        // عرض المشاريع الحديثة في لوحة التحكم
+        function renderRecentProjects() {
+            const container = document.getElementById('recent-projects');
+            const recentProjects = projects.slice(-3);
+
+            if (recentProjects.length === 0) {
+                container.innerHTML = '<p>لا توجد مشاريع حتى الآن. <a href="#" onclick="showView(\'projects\')">أضف مشروعك الأول</a></p>';
+                return;
+            }
+
+            container.innerHTML = recentProjects.map(project => `
+                <div class="project-card">
+                    <div class="project-header">
+                        <h4 class="project-title">${project.name}</h4>
+                        <span class="project-priority priority-${project.priority}">
+                            ${getPriorityText(project.priority)}
+                        </span>
+                    </div>
+                    <p class="project-description">${project.description || 'لا يوجد وصف'}</p>
+                    <div class="project-dates">
+                        <span>البداية: ${formatDate(project.startDate)}</span>
+                        <span>النهاية: ${formatDate(project.endDate)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // عرض المهام القادمة في لوحة التحكم
+        function renderUpcomingTasks() {
+            const container = document.getElementById('upcoming-tasks-list');
+            const upcomingTasks = tasks
+                .filter(task => task.status !== 'completed')
+                .sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+                .slice(0, 5);
+
+            if (upcomingTasks.length === 0) {
+                container.innerHTML = '<p>لا توجد مهام قادمة.</p>';
+                return;
+            }
+
+            container.innerHTML = upcomingTasks.map(task => {
+                const project = projects.find(p => p.id === task.projectId);
+                return `
+                    <div class="task-item">
+                        <div class="task-checkbox"></div>
+                        <div class="task-content">
+                            <h5 class="task-title">${task.name}</h5>
+                            <div class="task-meta">
+                                ${project ? project.name : 'مشروع غير معروف'} • ${formatDate(task.endDate)}
+                            </div>
+                        </div>
+                        <span class="task-status status-${task.status}">
+                            ${getStatusText(task.status)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // عرض جميع المشاريع
+        function renderProjects() {
+            const container = document.getElementById('projects-list');
+
+            if (projects.length === 0) {
+                container.innerHTML = '<p>لا توجد مشاريع حتى الآن.</p>';
+                return;
+            }
+
+            container.innerHTML = projects.map(project => `
+                <div class="project-card">
+                    <div class="project-header">
+                        <h4 class="project-title">${project.name}</h4>
+                        <span class="project-priority priority-${project.priority}">
+                            ${getPriorityText(project.priority)}
+                        </span>
+                    </div>
+                    <p class="project-description">${project.description || 'لا يوجد وصف'}</p>
+                    <div class="project-dates">
+                        <span>البداية: ${formatDate(project.startDate)}</span>
+                        <span>النهاية: ${formatDate(project.endDate)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // عرض جميع المهام
+        function renderTasks() {
+            const container = document.getElementById('tasks-list');
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p>لا توجد مهام حتى الآن.</p>';
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => {
+                const project = projects.find(p => p.id === task.projectId);
+                return `
+                    <div class="task-item">
+                        <div class="task-checkbox"></div>
+                        <div class="task-content">
+                            <h5 class="task-title">${task.name}</h5>
+                            <div class="task-meta">
+                                ${project ? project.name : 'مشروع غير معروف'} • ${formatDate(task.endDate)}
+                            </div>
+                        </div>
+                        <span class="task-status status-${task.status}">
+                            ${getStatusText(task.status)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // تحديث خيارات المشاريع في نموذج إضافة المهام
+        function updateTaskProjectOptions() {
+            const select = document.getElementById('task-project');
+            select.innerHTML = '<option value="">اختر المشروع</option>';
+            
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                select.appendChild(option);
             });
         }
-        
-        // معالجة تثبيت التطبيق (PWA)
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', function(e) {
-            // منع عرض التثبيت التلقائي
+
+        // وظائف مساعدة
+        function getPriorityText(priority) {
+            const priorities = {
+                'high': 'عالية',
+                'medium': 'متوسطة',
+                'low': 'منخفضة'
+            };
+            return priorities[priority] || priority;
+        }
+
+        function getStatusText(status) {
+            const statuses = {
+                'pending': 'قيد الانتظار',
+                'in-progress': 'جاري',
+                'completed': 'مكتملة',
+                'overdue': 'متأخرة'
+            };
+            return statuses[status] || status;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-SA');
+        }
+
+        // إعادة تعيين جميع البيانات
+        function resetAllData() {
+            if (confirm('هل أنت متأكد من رغبتك في حذف جميع البيانات؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+                localStorage.removeItem('userData');
+                localStorage.removeItem('projects');
+                localStorage.removeItem('tasks');
+                projects = [];
+                tasks = [];
+                currentUser = null;
+                isAuthenticated = false;
+                hideApp();
+                showLoginModal();
+                showNotification('تم حذف جميع البيانات بنجاح', 'info');
+            }
+        }
+
+        // إظهار نافذة تسجيل الدخول
+        function showLoginModal() {
+            hideApp();
+            document.getElementById('login-modal').classList.add('active');
+        }
+
+        // إخفاء نافذة تسجيل الدخول
+        function hideLoginModal() {
+            document.getElementById('login-modal').classList.remove('active');
+        }
+
+        // إظهار نافذة التسجيل
+        function showRegisterModal() {
+            hideLoginModal();
+            document.getElementById('register-modal').classList.add('active');
+        }
+
+        // إخفاء نافذة التسجيل
+        function hideRegisterModal() {
+            document.getElementById('register-modal').classList.remove('active');
+        }
+
+        // تحديث معلومات المستخدم في الواجهة
+        function updateUserInfo() {
+            if (currentUser) {
+                const userNameEl = document.getElementById('user-name');
+                const userEmailEl = document.getElementById('user-email');
+                if (userNameEl) userNameEl.textContent = currentUser.name;
+                if (userEmailEl) userEmailEl.textContent = currentUser.email;
+            }
+        }
+
+        // معالجة تسجيل الدخول
+        document.getElementById('login-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            deferredPrompt = e;
             
-            // إظهار زر التثبيت المخصص
-            const installButton = document.createElement('button');
-            installButton.className = 'btn btn-primary install-btn';
-            installButton.innerHTML = '<i class="fas fa-download"></i> تثبيت التطبيق';
-            installButton.style.position = 'fixed';
-            installButton.style.bottom = '20px';
-            installButton.style.right = '20px';
-            installButton.style.zIndex = '9999';
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
             
-            installButton.addEventListener('click', function() {
-                // إخفاء الزر
-                installButton.style.display = 'none';
+            if (email && password) {
+                currentUser = {
+                    name: 'أحمد محمد',
+                    email: email,
+                    id: Date.now()
+                };
                 
-                // إظهار نافذة التثبيت
-                deferredPrompt.prompt();
+                localStorage.setItem('userData', JSON.stringify(currentUser));
+                isAuthenticated = true;
                 
-                // انتظار اختيار المستخدم
-                deferredPrompt.userChoice.then(function(choiceResult) {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                        if (window.notifications) {
-                            notifications.show('تم تثبيت التطبيق بنجاح!', 'success');
-                        }
-                    } else {
-                        console.log('User dismissed the install prompt');
-                        // إعادة إظهار الزر بعد فترة
-                        setTimeout(() => {
-                            installButton.style.display = 'block';
-                        }, 30000);
-                    }
-                    deferredPrompt = null;
-                });
-            });
+                loadData();
+                hideLoginModal();
+                showApp();
+                updateUserInfo();
+                updateDashboard();
+                
+                showNotification('مرحباً بك! تم تسجيل الدخول بنجاح', 'success');
+            }
+        });
+
+        // معالجة إنشاء حساب جديد
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            document.body.appendChild(installButton);
-        });
-        
-        // معالجة تثبيت التطبيق بنجاح
-        window.addEventListener('appinstalled', function(e) {
-            console.log('PWA was installed');
-            if (window.notifications) {
-                notifications.show('تم تثبيت التطبيق بنجاح! يمكنك الآن الوصول إليه من الشاشة الرئيسية.', 'success');
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            
+            if (password !== confirmPassword) {
+                showNotification('كلمات المرور غير متطابقة', 'error');
+                return;
+            }
+            
+            if (name && email && password) {
+                currentUser = {
+                    name: name,
+                    email: email,
+                    id: Date.now()
+                };
+                
+                localStorage.setItem('userData', JSON.stringify(currentUser));
+                isAuthenticated = true;
+                
+                loadData();
+                hideRegisterModal();
+                showApp();
+                updateUserInfo();
+                updateDashboard();
+                
+                showNotification('تم إنشاء الحساب بنجاح! مرحباً بك', 'success');
             }
         });
-        
-        // معالجة تغيير حالة الاتصال
-        window.addEventListener('online', function() {
-            if (window.notifications) {
-                notifications.show('تم استعادة الاتصال بالإنترنت', 'success');
+
+        // تسجيل الخروج
+        function handleLogout() {
+            localStorage.removeItem('userData');
+            currentUser = null;
+            isAuthenticated = false;
+            hideApp();
+            showLoginModal();
+            showNotification('تم تسجيل الخروج بنجاح', 'info');
+        }
+
+        // إظهار التنبيهات
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <span>${message}</span>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // وظائف النوافذ المنبثقة
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showAddProjectModal() {
+            document.getElementById('add-project-modal').classList.add('active');
+        }
+
+        function showAddTaskModal() {
+            updateTaskProjectOptions();
+            document.getElementById('add-task-modal').classList.add('active');
+        }
+
+        function showInviteMemberModal() {
+            document.getElementById('invite-member-modal').classList.add('active');
+        }
+
+        // وظائف التنقل
+        function showView(viewName) {
+            // إخفاء جميع الصفحات
+            const views = document.querySelectorAll('.view');
+            views.forEach(view => view.classList.remove('active'));
+            
+            // إظهار الصفحة المطلوبة
+            const targetView = document.getElementById(viewName + '-view');
+            if (targetView) {
+                targetView.classList.add('active');
             }
-        });
-        
-        window.addEventListener('offline', function() {
-            if (window.notifications) {
-                notifications.show('لا يوجد اتصال بالإنترنت. التطبيق يعمل في وضع عدم الاتصال.', 'warning', {
-                    persistent: true
-                });
+            
+            // تحديث الروابط النشطة
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => link.classList.remove('active'));
+            const activeLink = document.querySelector(`[data-view="${viewName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
             }
-        });
+
+            // تحديث المحتوى حسب الصفحة
+            if (viewName === 'projects') {
+                renderProjects();
+            } else if (viewName === 'tasks') {
+                renderTasks();
+            }
+        }
+
+        // وظائف Gantt
+        function ganttZoomIn() {
+            showNotification('تم التكبير', 'info');
+        }
+
+        function ganttZoomOut() {
+            showNotification('تم التصغير', 'info');
+        }
+
+        function ganttResetZoom() {
+            showNotification('تم إعادة تعيين التكبير', 'info');
+        }
+
+        function ganttExportToPNG() {
+            showNotification('تم تصدير المخطط', 'success');
+        }
+
+        // وظائف التطبيق
+        function exportData() {
+            const data = {
+                projects: projects,
+                tasks: tasks,
+                user: currentUser
+            };
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'project-manager-data.json';
+            link.click();
+            showNotification('تم تصدير البيانات', 'success');
+        }
+
+        function showAbout() {
+            showNotification('مدير المشاريع - الإصدار 1.0.0', 'info');
+        }
     </script>
 </body>
 </html>
