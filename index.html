@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير المشاريع - نظام إدارة المشاريع المتكامل</title>
+    
+    <!-- الأيقونات والخطوط -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- مكتبة مخطط جانت -->
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css">
+    
+    <!-- ملفات CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%233b82f6'/><text x='50' y='60' font-size='60' text-anchor='middle' fill='white'>📊</text></svg>">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="مدير المشاريع">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#3b82f6">
+    <meta name="theme-color" content="#3b82f6">
+</head>
+<body>
+    <!-- شاشة التحميل -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>مدير المشاريع</h2>
+            <p>جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <div id="app" class="app-container">
+        <!-- الشريط العلوي -->
+        <header id="header" class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="app-title">
+                        <i class="fas fa-project-diagram"></i>
+                        مدير المشاريع
+                    </h1>
+                </div>
+                
+                <div class="header-center">
+                    <div class="search-container">
+                        <input type="search" placeholder="البحث في المشاريع والمهام..." class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                </div>
+                
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="btn btn-icon" title="التنبيهات">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge">3</span>
+                        </button>
+                        
+                        <div class="user-menu">
+                            <button class="user-avatar" id="user-menu-btn">
+                                <i class="fas fa-user"></i>
+                            </button>
+                            <div class="user-dropdown" id="user-dropdown">
+                                <div class="user-info">
+                                    <div class="user-name" id="user-name">أحمد محمد</div>
+                                    <div class="user-email" id="user-email">ahmed@example.com</div>
+                                </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-user-cog"></i>
+                                    إعدادات الحساب
+                                </a>
+                                <a href="#" class="dropdown-item" onclick="app.exportData()">
+                                    <i class="fas fa-download"></i>
+                                    تصدير البيانات
+                                </a>
+                                <a href="#" class="dropdown-item" onclick="app.showAbout()">
+                                    <i class="fas fa-info-circle"></i>
+                                    حول التطبيق
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item" onclick="auth.handleLogout()">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    تسجيل الخروج
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- الشريط الجانبي -->
+        <aside id="sidebar" class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-view="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>لوحة التحكم</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="projects">
+                            <i class="fas fa-folder-open"></i>
+                            <span>المشاريع</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="tasks">
+                            <i class="fas fa-tasks"></i>
+                            <span>المهام</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="gantt">
+                            <i class="fas fa-chart-gantt"></i>
+                            <span>مخطط جانت</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="team">
+                            <i class="fas fa-users"></i>
+                            <span>الفريق</span>
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="sidebar-footer">
+                    <div class="app-version">
+                        <small>الإصدار 1.0.0</small>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main id="main-content" class="main-content">
+            <!-- لوحة التحكم -->
+            <div id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <h2>لوحة التحكم</h2>
+                    <p>نظرة عامة على مشاريعك ومهامك</p>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="total-projects">0</div>
+                            <div class="stat-label">إجمالي المشاريع</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="total-tasks">0</div>
+                            <div class="stat-label">إجمالي المهام</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="completed-tasks">0</div>
+                            <div class="stat-label">المهام المكتملة</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="overdue-tasks">0</div>
+                            <div class="stat-label">المهام المتأخرة</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-content">
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>المشاريع الحديثة</h3>
+                            <a href="#" class="view-all-link" onclick="app.showView('projects')">
+                                عرض الكل <i class="fas fa-arrow-left"></i>
+                            </a>
+                        </div>
+                        <div id="recent-projects" class="projects-grid">
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <div class="dashboard-section">
+                        <div class="section-header">
+                            <h3>المهام القادمة</h3>
+                            <a href="#" class="view-all-link" onclick="app.showView('tasks')">
+                                عرض الكل <i class="fas fa-arrow-left"></i>
+                            </a>
+                        </div>
+                        <div id="upcoming-tasks-list" class="tasks-list">
+                            <!-- سيتم ملؤها بواسطة JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- صفحة المشاريع -->
+            <div id="projects-view" class="view">
+                <div class="view-header">
+                    <h2>المشاريع</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" onclick="projects.showAddProjectModal()">
+                            <i class="fas fa-plus"></i>
+                            مشروع جديد
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="view-filters">
+                    <div class="filter-group">
+                        <select id="filter-project-status" class="form-select">
+                            <option value="">جميع الحالات</option>
+                            <option value="active">نشط</option>
+                            <option value="completed">مكتمل</option>
+                            <option value="on-hold">متوقف</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="filter-project-priority" class="form-select">
+                            <option value="">جميع الأولويات</option>
+                            <option value="high">عالية</option>
+                            <option value="medium">متوسطة</option>
+                            <option value="low">منخفضة</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="projects-list" class="projects-grid">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <!-- صفحة المهام -->
+            <div id="tasks-view" class="view">
+                <div class="view-header">
+                    <h2>المهام</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" onclick="tasks.showAddTaskModal()">
+                            <i class="fas fa-plus"></i>
+                            مهمة جديدة
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="view-filters">
+                    <div class="filter-group">
+                        <select id="filter-project" class="form-select">
+                            <option value="">جميع المشاريع</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <select id="filter-status" class="form-select">
+                            <option value="">جميع الحالات</option>
+                            <option value="pending">قيد الانتظار</option>
+                            <option value="in-progress">جاري</option>
+                            <option value="completed">مكتملة</option>
+                            <option value="overdue">متأخرة</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="tasks-list" class="tasks-list">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <!-- صفحة مخطط جانت -->
+            <div id="gantt-view" class="view">
+                <div class="view-header">
+                    <h2>مخطط جانت</h2>
+                    <div class="view-actions">
+                        <div class="filter-group">
+                            <select id="gantt-project-filter" class="form-select">
+                                <option value="">جميع المشاريع</option>
+                            </select>
+                        </div>
+                        <div class="gantt-controls">
+                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.zoomIn()" title="تكبير">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.zoomOut()" title="تصغير">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="ganttManager.resetZoom()" title="إعادة تعيين">
+                                <i class="fas fa-expand-arrows-alt"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-secondary" onclick="ganttManager.exportToPNG()">
+                            <i class="fas fa-download"></i>
+                            تصدير PNG
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="gantt_here" class="gantt-container">
+                    <!-- سيتم ملؤه بواسطة مكتبة جانت -->
+                </div>
+            </div>
+
+            <!-- صفحة الفريق -->
+            <div id="team-view" class="view">
+                <div class="view-header">
+                    <h2>إدارة الفريق</h2>
+                    <div class="view-actions">
+                        <button class="btn btn-primary" id="invite-member-btn">
+                            <i class="fas fa-user-plus"></i>
+                            دعوة عضو
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="team-stats">
+                    <div class="team-stat">
+                        <i class="fas fa-users"></i>
+                        <span id="active-members-count">1</span>
+                        <small>عضو نشط</small>
+                    </div>
+                    <div class="team-stat">
+                        <i class="fas fa-clock"></i>
+                        <span id="pending-invites-count">0</span>
+                        <small>دعوة معلقة</small>
+                    </div>
+                </div>
+                
+                <div id="team-members" class="team-grid">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- النوافذ المنبثقة -->
+    
+    <!-- نافذة تسجيل الدخول -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>تسجيل الدخول</h3>
+            </div>
+            <form id="login-form" class="modal-body">
+                <div class="form-group">
+                    <label for="login-email">البريد الإلكتروني</label>
+                    <input type="email" id="login-email" class="form-input" required placeholder="example@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">كلمة المرور</label>
+                    <input type="password" id="login-password" class="form-input" required placeholder="كلمة المرور">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        تسجيل الدخول
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="auth.showRegisterModal()">
+                        إنشاء حساب جديد
+                    </button>
+                </div>
+                <div class="demo-info">
+                    <small>للتجربة: استخدم أي بريد إلكتروني وكلمة مرور</small>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إنشاء حساب -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إنشاء حساب جديد</h3>
+            </div>
+            <form id="register-form" class="modal-body">
+                <div class="form-group">
+                    <label for="register-name">الاسم الكامل</label>
+                    <input type="text" id="register-name" class="form-input" required placeholder="الاسم الكامل">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">البريد الإلكتروني</label>
+                    <input type="email" id="register-email" class="form-input" required placeholder="example@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">كلمة المرور</label>
+                    <input type="password" id="register-password" class="form-input" required placeholder="كلمة المرور">
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm-password">تأكيد كلمة المرور</label>
+                    <input type="password" id="register-confirm-password" class="form-input" required placeholder="تأكيد كلمة المرور">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i>
+                        إنشاء الحساب
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="auth.showLoginModal()">
+                        لديك حساب؟ سجل الدخول
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مشروع -->
+    <div id="add-project-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إضافة مشروع جديد</h3>
+                <button class="modal-close" onclick="projects.hideModal('add-project-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="add-project-form" class="modal-body">
+                <div class="form-group">
+                    <label for="project-name">اسم المشروع</label>
+                    <input type="text" id="project-name" class="form-input" required placeholder="اسم المشروع">
+                </div>
+                <div class="form-group">
+                    <label for="project-description">وصف المشروع</label>
+                    <textarea id="project-description" class="form-textarea" rows="3" placeholder="وصف مختصر للمشروع"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project-start-date">تاريخ البداية</label>
+                        <input type="date" id="project-start-date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-end-date">تاريخ النهاية</label>
+                        <input type="date" id="project-end-date" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="project-priority">الأولوية</label>
+                        <select id="project-priority" class="form-select" required>
+                            <option value="low">منخفضة</option>
+                            <option value="medium" selected>متوسطة</option>
+                            <option value="high">عالية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="project-color">لون المشروع</label>
+                        <input type="color" id="project-color" class="form-input" value="#3b82f6">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        إضافة المشروع
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('add-project-modal')">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة مهمة -->
+    <div id="add-task-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>إضافة مهمة جديدة</h3>
+                <button class="modal-close" onclick="projects.hideModal('add-task-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="add-task-form" class="modal-body">
+                <div class="form-group">
+                    <label for="task-project">المشروع</label>
+                    <select id="task-project" class="form-select" required>
+                        <option value="">اختر المشروع</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-name">اسم المهمة</label>
+                    <input type="text" id="task-name" class="form-input" required placeholder="اسم المهمة">
+                </div>
+                <div class="form-group">
+                    <label for="task-description">وصف المهمة</label>
+                    <textarea id="task-description" class="form-textarea" rows="3" placeholder="وصف مختصر للمهمة"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-start-date">تاريخ البداية</label>
+                        <input type="date" id="task-start-date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-end-date">تاريخ النهاية</label>
+                        <input type="date" id="task-end-date" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="task-priority">الأولوية</label>
+                        <select id="task-priority" class="form-select" required>
+                            <option value="low">منخفضة</option>
+                            <option value="medium" selected>متوسطة</option>
+                            <option value="high">عالية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-status">الحالة</label>
+                        <select id="task-status" class="form-select" required>
+                            <option value="pending" selected>قيد الانتظار</option>
+                            <option value="in-progress">جاري</option>
+                            <option value="completed">مكتملة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        إضافة المهمة
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('add-task-modal')">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- نافذة دعوة عضو -->
+    <div id="invite-member-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>دعوة عضو جديد</h3>
+                <button class="modal-close" onclick="projects.hideModal('invite-member-modal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="invite-member-form" class="modal-body">
+                <div class="form-group">
+                    <label for="member-email">البريد الإلكتروني</label>
+                    <input type="email" id="member-email" class="form-input" required placeholder="example@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="member-role">الصلاحية</label>
+                    <select id="member-role" class="form-select" required>
+                        <option value="viewer">مشاهد - يمكنه عرض المشاريع فقط</option>
+                        <option value="editor" selected>محرر - يمكنه تحرير المهام</option>
+                        <option value="admin">مدير - صلاحيات كاملة</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>المشاريع المسموحة</label>
+                    <div id="member-projects" class="checkbox-group">
+                        <!-- سيتم ملؤها بواسطة JavaScript -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        إرسال الدعوة
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="projects.hideModal('invite-member-modal')">
+                        إلغاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- حاوية التنبيهات -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- طبقة التراكب للجوال -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- ملفات JavaScript -->
+    <script src="js/utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/projects.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/gantt.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/team.js"></script>
+    <script src="js/app.js"></script>
+    
+    <!-- تسجيل Service Worker للـ PWA -->
+    <script>
+        // تسجيل Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                        
+                        // التحقق من وجود تحديث
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // إشعار المستخدم بوجود تحديث
+                                    if (window.notifications) {
+                                        notifications.show('تحديث جديد متاح! أعد تحميل الصفحة للحصول على أحدث الميزات.', 'info', {
+                                            persistent: true,
+                                            actions: [
+                                                { id: 'reload', label: 'إعادة تحميل' },
+                                                { id: 'dismiss', label: 'لاحقاً' }
+                                            ]
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+        
+        // معالجة تثبيت التطبيق (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            // منع عرض التثبيت التلقائي
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // إظهار زر التثبيت المخصص
+            const installButton = document.createElement('button');
+            installButton.className = 'btn btn-primary install-btn';
+            installButton.innerHTML = '<i class="fas fa-download"></i> تثبيت التطبيق';
+            installButton.style.position = 'fixed';
+            installButton.style.bottom = '20px';
+            installButton.style.right = '20px';
+            installButton.style.zIndex = '9999';
+            
+            installButton.addEventListener('click', function() {
+                // إخفاء الزر
+                installButton.style.display = 'none';
+                
+                // إظهار نافذة التثبيت
+                deferredPrompt.prompt();
+                
+                // انتظار اختيار المستخدم
+                deferredPrompt.userChoice.then(function(choiceResult) {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        if (window.notifications) {
+                            notifications.show('تم تثبيت التطبيق بنجاح!', 'success');
+                        }
+                    } else {
+                        console.log('User dismissed the install prompt');
+                        // إعادة إظهار الزر بعد فترة
+                        setTimeout(() => {
+                            installButton.style.display = 'block';
+                        }, 30000);
+                    }
+                    deferredPrompt = null;
+                });
+            });
+            
+            document.body.appendChild(installButton);
+        });
+        
+        // معالجة تثبيت التطبيق بنجاح
+        window.addEventListener('appinstalled', function(e) {
+            console.log('PWA was installed');
+            if (window.notifications) {
+                notifications.show('تم تثبيت التطبيق بنجاح! يمكنك الآن الوصول إليه من الشاشة الرئيسية.', 'success');
+            }
+        });
+        
+        // معالجة تغيير حالة الاتصال
+        window.addEventListener('online', function() {
+            if (window.notifications) {
+                notifications.show('تم استعادة الاتصال بالإنترنت', 'success');
+            }
+        });
+        
+        window.addEventListener('offline', function() {
+            if (window.notifications) {
+                notifications.show('لا يوجد اتصال بالإنترنت. التطبيق يعمل في وضع عدم الاتصال.', 'warning', {
+                    persistent: true
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
