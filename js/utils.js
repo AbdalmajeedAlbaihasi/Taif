@@ -56,209 +56,60 @@ const DateUtils = {
     },
     
     /**
-     * التحقق من انتهاء صلاحية التاريخ
+     * التحقق من انتهاء التاريخ
      * @param {Date|string} date - التاريخ المراد فحصه
-     * @returns {boolean} true إذا كان التاريخ منتهي الصلاحية
+     * @returns {boolean} true إذا كان التاريخ منتهي
      */
     isOverdue(date) {
         if (!date) return false;
         
-        const targetDate = new Date(date);
+        const d = new Date(date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        return targetDate < today;
+        return d < today;
     },
     
     /**
-     * التحقق من قرب انتهاء الموعد (خلال 3 أيام)
-     * @param {Date|string} date - التاريخ المراد فحصه
-     * @returns {boolean} true إذا كان الموعد قريب
+     * الحصول على تاريخ اليوم
+     * @returns {string} تاريخ اليوم بصيغة YYYY-MM-DD
      */
-    isDueSoon(date) {
-        if (!date) return false;
-        
-        const targetDate = new Date(date);
-        const today = new Date();
-        const threeDaysFromNow = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
-        
-        return targetDate >= today && targetDate <= threeDaysFromNow;
+    getToday() {
+        return new Date().toISOString().split('T')[0];
     }
 };
 
-// ===== مساعدات DOM =====
-const DOMUtils = {
-    /**
-     * إنشاء عنصر HTML مع خصائص
-     * @param {string} tag - نوع العنصر
-     * @param {Object} attributes - خصائص العنصر
-     * @param {string} content - محتوى العنصر
-     * @returns {HTMLElement} العنصر المنشأ
-     */
-    createElement(tag, attributes = {}, content = '') {
-        const element = document.createElement(tag);
-        
-        Object.keys(attributes).forEach(key => {
-            if (key === 'className') {
-                element.className = attributes[key];
-            } else if (key === 'dataset') {
-                Object.keys(attributes[key]).forEach(dataKey => {
-                    element.dataset[dataKey] = attributes[key][dataKey];
-                });
-            } else {
-                element.setAttribute(key, attributes[key]);
-            }
-        });
-        
-        if (content) {
-            element.innerHTML = content;
-        }
-        
-        return element;
-    },
-    
-    /**
-     * إضافة مستمع حدث مع إزالة تلقائية
-     * @param {HTMLElement} element - العنصر
-     * @param {string} event - نوع الحدث
-     * @param {Function} handler - معالج الحدث
-     * @param {Object} options - خيارات إضافية
-     */
-    addEventListenerOnce(element, event, handler, options = {}) {
-        const wrappedHandler = (e) => {
-            handler(e);
-            element.removeEventListener(event, wrappedHandler, options);
-        };
-        
-        element.addEventListener(event, wrappedHandler, options);
-    },
-    
-    /**
-     * إظهار/إخفاء عنصر مع تأثير
-     * @param {HTMLElement} element - العنصر
-     * @param {boolean} show - إظهار أم إخفاء
-     * @param {string} animation - نوع التأثير
-     */
-    toggleElement(element, show, animation = 'fade') {
-        if (show) {
-            element.classList.remove('hidden');
-            element.style.display = '';
-            
-            if (animation === 'fade') {
-                element.style.opacity = '0';
-                element.style.transition = 'opacity 0.3s ease-in-out';
-                setTimeout(() => {
-                    element.style.opacity = '1';
-                }, 10);
-            }
-        } else {
-            if (animation === 'fade') {
-                element.style.opacity = '0';
-                element.style.transition = 'opacity 0.3s ease-in-out';
-                setTimeout(() => {
-                    element.style.display = 'none';
-                    element.classList.add('hidden');
-                }, 300);
-            } else {
-                element.style.display = 'none';
-                element.classList.add('hidden');
-            }
-        }
-    }
-};
-
-// ===== مساعدات التحقق من صحة البيانات =====
-const ValidationUtils = {
-    /**
-     * التحقق من صحة البريد الإلكتروني
-     * @param {string} email - البريد الإلكتروني
-     * @returns {boolean} true إذا كان صحيحاً
-     */
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    },
-    
-    /**
-     * التحقق من قوة كلمة المرور
-     * @param {string} password - كلمة المرور
-     * @returns {Object} نتيجة التحقق
-     */
-    validatePassword(password) {
-        const result = {
-            isValid: false,
-            errors: []
-        };
-        
-        if (!password || password.length < 6) {
-            result.errors.push('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-        }
-        
-        if (!/[A-Za-z]/.test(password)) {
-            result.errors.push('كلمة المرور يجب أن تحتوي على حرف واحد على الأقل');
-        }
-        
-        if (!/[0-9]/.test(password)) {
-            result.errors.push('كلمة المرور يجب أن تحتوي على رقم واحد على الأقل');
-        }
-        
-        result.isValid = result.errors.length === 0;
-        return result;
-    },
-    
-    /**
-     * التحقق من صحة التواريخ
-     * @param {string} startDate - تاريخ البداية
-     * @param {string} endDate - تاريخ النهاية
-     * @returns {Object} نتيجة التحقق
-     */
-    validateDateRange(startDate, endDate) {
-        const result = {
-            isValid: false,
-            errors: []
-        };
-        
-        if (!startDate) {
-            result.errors.push('تاريخ البداية مطلوب');
-        }
-        
-        if (!endDate) {
-            result.errors.push('تاريخ النهاية مطلوب');
-        }
-        
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            
-            if (start >= end) {
-                result.errors.push('تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
-            }
-        }
-        
-        result.isValid = result.errors.length === 0;
-        return result;
-    }
-};
-
-// ===== مساعدات النص =====
+// ===== وظائف النصوص =====
 const TextUtils = {
     /**
-     * اقتطاع النص مع إضافة نقاط
-     * @param {string} text - النص
-     * @param {number} maxLength - الطول الأقصى
+     * اقتطاع النص إلى طول محدد
+     * @param {string} text - النص المراد اقتطاعه
+     * @param {number} length - الطول المطلوب
      * @returns {string} النص المقتطع
      */
-    truncate(text, maxLength = 100) {
-        if (!text || text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
+    truncate(text, length = 100) {
+        if (!text) return '';
+        if (text.length <= length) return text;
+        return text.substring(0, length) + '...';
     },
     
     /**
-     * تحويل النص إلى slug
-     * @param {string} text - النص
+     * تنظيف النص من المسافات الزائدة
+     * @param {string} text - النص المراد تنظيفه
+     * @returns {string} النص المنظف
+     */
+    clean(text) {
+        if (!text) return '';
+        return text.trim().replace(/\s+/g, ' ');
+    },
+    
+    /**
+     * تحويل النص إلى عنوان URL
+     * @param {string} text - النص المراد تحويله
      * @returns {string} النص المحول
      */
     slugify(text) {
+        if (!text) return '';
         return text
             .toLowerCase()
             .trim()
@@ -268,8 +119,8 @@ const TextUtils = {
     },
     
     /**
-     * تحويل الحرف الأول إلى كبير
-     * @param {string} text - النص
+     * تحويل أول حرف إلى كبير
+     * @param {string} text - النص المراد تحويله
      * @returns {string} النص المحول
      */
     capitalize(text) {
@@ -278,54 +129,135 @@ const TextUtils = {
     }
 };
 
-// ===== مساعدات الألوان =====
+// ===== وظائف الألوان =====
 const ColorUtils = {
     /**
-     * الحصول على لون حسب الأولوية
-     * @param {string} priority - الأولوية
-     * @returns {string} اللون
-     */
-    getPriorityColor(priority) {
-        const colors = {
-            high: '#ef4444',
-            medium: '#f59e0b',
-            low: '#10b981'
-        };
-        return colors[priority] || colors.medium;
-    },
-    
-    /**
-     * الحصول على لون حسب الحالة
-     * @param {string} status - الحالة
-     * @returns {string} اللون
-     */
-    getStatusColor(status) {
-        const colors = {
-            pending: '#64748b',
-            'in-progress': '#06b6d4',
-            completed: '#10b981',
-            overdue: '#ef4444'
-        };
-        return colors[status] || colors.pending;
-    },
-    
-    /**
      * توليد لون عشوائي
-     * @returns {string} اللون بصيغة hex
+     * @returns {string} لون بصيغة hex
      */
     generateRandomColor() {
         const colors = [
             '#3b82f6', '#ef4444', '#10b981', '#f59e0b',
-            '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+            '#8b5cf6', '#06b6d4', '#84cc16', '#f97316',
+            '#ec4899', '#6366f1', '#14b8a6', '#eab308'
         ];
         return colors[Math.floor(Math.random() * colors.length)];
+    },
+    
+    /**
+     * تحويل لون hex إلى rgba
+     * @param {string} hex - اللون بصيغة hex
+     * @param {number} alpha - الشفافية
+     * @returns {string} اللون بصيغة rgba
+     */
+    hexToRgba(hex, alpha = 1) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    },
+    
+    /**
+     * الحصول على لون متباين
+     * @param {string} backgroundColor - لون الخلفية
+     * @returns {string} اللون المتباين (أبيض أو أسود)
+     */
+    getContrastColor(backgroundColor) {
+        // إزالة # من بداية اللون
+        const hex = backgroundColor.replace('#', '');
+        
+        // تحويل إلى RGB
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        
+        // حساب السطوع
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        
+        return brightness > 128 ? '#000000' : '#ffffff';
     }
 };
 
-// ===== مساعدات التخزين المحلي =====
+// ===== وظائف التحقق =====
+const ValidationUtils = {
+    /**
+     * التحقق من صحة البريد الإلكتروني
+     * @param {string} email - البريد الإلكتروني
+     * @returns {boolean} true إذا كان صحيح
+     */
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    },
+    
+    /**
+     * التحقق من قوة كلمة المرور
+     * @param {string} password - كلمة المرور
+     * @returns {object} نتيجة التحقق
+     */
+    validatePassword(password) {
+        const result = {
+            isValid: false,
+            score: 0,
+            feedback: []
+        };
+        
+        if (!password) {
+            result.feedback.push('كلمة المرور مطلوبة');
+            return result;
+        }
+        
+        if (password.length < 6) {
+            result.feedback.push('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+        } else {
+            result.score += 1;
+        }
+        
+        if (password.length >= 8) {
+            result.score += 1;
+        }
+        
+        if (/[A-Z]/.test(password)) {
+            result.score += 1;
+        } else {
+            result.feedback.push('يفضل استخدام حرف كبير واحد على الأقل');
+        }
+        
+        if (/[0-9]/.test(password)) {
+            result.score += 1;
+        } else {
+            result.feedback.push('يفضل استخدام رقم واحد على الأقل');
+        }
+        
+        if (/[^A-Za-z0-9]/.test(password)) {
+            result.score += 1;
+        } else {
+            result.feedback.push('يفضل استخدام رمز خاص واحد على الأقل');
+        }
+        
+        result.isValid = result.score >= 2;
+        return result;
+    },
+    
+    /**
+     * التحقق من صحة URL
+     * @param {string} url - الرابط
+     * @returns {boolean} true إذا كان صحيح
+     */
+    isValidUrl(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+};
+
+// ===== وظائف التخزين =====
 const StorageUtils = {
     /**
-     * حفظ البيانات في التخزين المحلي
+     * حفظ البيانات في localStorage
      * @param {string} key - المفتاح
      * @param {any} value - القيمة
      */
@@ -338,7 +270,7 @@ const StorageUtils = {
     },
     
     /**
-     * استرجاع البيانات من التخزين المحلي
+     * استرجاع البيانات من localStorage
      * @param {string} key - المفتاح
      * @param {any} defaultValue - القيمة الافتراضية
      * @returns {any} البيانات المسترجعة
@@ -354,7 +286,7 @@ const StorageUtils = {
     },
     
     /**
-     * حذف البيانات من التخزين المحلي
+     * حذف البيانات من localStorage
      * @param {string} key - المفتاح
      */
     remove(key) {
@@ -377,79 +309,175 @@ const StorageUtils = {
     }
 };
 
-// ===== مساعدات الأحداث =====
-const EventUtils = {
+// ===== وظائف عامة =====
+const Utils = {
     /**
-     * إنشاء حدث مخصص
-     * @param {string} eventName - اسم الحدث
-     * @param {any} detail - تفاصيل الحدث
-     * @returns {CustomEvent} الحدث المخصص
+     * توليد معرف فريد
+     * @returns {string} معرف فريد
      */
-    createCustomEvent(eventName, detail = null) {
-        return new CustomEvent(eventName, {
-            detail,
-            bubbles: true,
-            cancelable: true
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    },
+    
+    /**
+     * تأخير التنفيذ
+     * @param {number} ms - المدة بالميلي ثانية
+     * @returns {Promise} وعد التأخير
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+    
+    /**
+     * نسخ النص إلى الحافظة
+     * @param {string} text - النص المراد نسخه
+     * @returns {Promise<boolean>} نتيجة النسخ
+     */
+    async copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (error) {
+            console.error('خطأ في نسخ النص:', error);
+            return false;
+        }
+    },
+    
+    /**
+     * تحميل ملف JSON
+     * @param {object} data - البيانات
+     * @param {string} filename - اسم الملف
+     */
+    downloadJSON(data, filename = 'data.json') {
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: 'application/json'
+        });
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+    
+    /**
+     * تحميل ملف CSV
+     * @param {array} data - البيانات
+     * @param {string} filename - اسم الملف
+     */
+    downloadCSV(data, filename = 'data.csv') {
+        if (!data.length) return;
+        
+        const headers = Object.keys(data[0]);
+        const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+    
+    /**
+     * تنسيق الأرقام
+     * @param {number} number - الرقم
+     * @returns {string} الرقم المنسق
+     */
+    formatNumber(number) {
+        if (typeof number !== 'number') return '0';
+        return number.toLocaleString('ar-SA');
+    },
+    
+    /**
+     * تنسيق حجم الملف
+     * @param {number} bytes - الحجم بالبايت
+     * @returns {string} الحجم المنسق
+     */
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 بايت';
+        
+        const k = 1024;
+        const sizes = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    
+    /**
+     * خلط عناصر المصفوفة
+     * @param {array} array - المصفوفة
+     * @returns {array} المصفوفة المخلوطة
+     */
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    },
+    
+    /**
+     * إزالة التكرارات من المصفوفة
+     * @param {array} array - المصفوفة
+     * @param {string} key - المفتاح للمقارنة (اختياري)
+     * @returns {array} المصفوفة بدون تكرارات
+     */
+    removeDuplicates(array, key = null) {
+        if (!key) {
+            return [...new Set(array)];
+        }
+        
+        const seen = new Set();
+        return array.filter(item => {
+            const value = item[key];
+            if (seen.has(value)) {
+                return false;
+            }
+            seen.add(value);
+            return true;
         });
     },
     
     /**
-     * إرسال حدث مخصص
-     * @param {string} eventName - اسم الحدث
-     * @param {any} detail - تفاصيل الحدث
-     * @param {HTMLElement} target - العنصر المستهدف
+     * ترتيب المصفوفة
+     * @param {array} array - المصفوفة
+     * @param {string} key - المفتاح للترتيب
+     * @param {string} direction - اتجاه الترتيب (asc/desc)
+     * @returns {array} المصفوفة المرتبة
      */
-    dispatch(eventName, detail = null, target = document) {
-        const event = this.createCustomEvent(eventName, detail);
-        target.dispatchEvent(event);
+    sortArray(array, key, direction = 'asc') {
+        return [...array].sort((a, b) => {
+            const aVal = a[key];
+            const bVal = b[key];
+            
+            if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+            return 0;
+        });
     }
 };
 
-// ===== مساعدات الأداء =====
-const PerformanceUtils = {
-    /**
-     * تأخير تنفيذ الوظيفة (debounce)
-     * @param {Function} func - الوظيفة
-     * @param {number} wait - وقت التأخير بالميلي ثانية
-     * @returns {Function} الوظيفة المؤخرة
-     */
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    },
-    
-    /**
-     * تحديد معدل تنفيذ الوظيفة (throttle)
-     * @param {Function} func - الوظيفة
-     * @param {number} limit - الحد الأقصى للتنفيذ بالميلي ثانية
-     * @returns {Function} الوظيفة المحدودة
-     */
-    throttle(func, limit) {
-        let inThrottle;
-        return function executedFunction(...args) {
-            if (!inThrottle) {
-                func.apply(this, args);
-                inThrottle = true;
-                setTimeout(() => inThrottle = false, limit);
-            }
-        };
-    }
+// ===== تجميع جميع الوظائف =====
+const utils = {
+    ...DateUtils,
+    ...TextUtils,
+    ...ColorUtils,
+    ...ValidationUtils,
+    ...StorageUtils,
+    ...Utils
 };
 
-// ===== تصدير الوظائف =====
-window.DateUtils = DateUtils;
-window.DOMUtils = DOMUtils;
-window.ValidationUtils = ValidationUtils;
-window.TextUtils = TextUtils;
-window.ColorUtils = ColorUtils;
-window.StorageUtils = StorageUtils;
-window.EventUtils = EventUtils;
-window.PerformanceUtils = PerformanceUtils;
+// تصدير للاستخدام العام
+window.utils = utils;
 

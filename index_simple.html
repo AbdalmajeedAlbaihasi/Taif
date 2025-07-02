@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير المشاريع - نظام إدارة المشاريع المتكامل</title>
+    
+    <!-- الأيقونات والخطوط -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- ملفات CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    
+    <style>
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 24px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .app-container {
+            display: none;
+        }
+        
+        .app-container.show {
+            display: grid;
+            grid-template-areas: 
+                "header header"
+                "sidebar main";
+            grid-template-columns: 280px 1fr;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            margin-left: 8px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .demo-info {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f1f5f9;
+            border-radius: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- شاشة التحميل -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h2>مدير المشاريع</h2>
+            <p>جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- التطبيق الرئيسي -->
+    <div id="app" class="app-container">
+        <!-- الشريط العلوي -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="app-title">
+                        <i class="fas fa-project-diagram"></i>
+                        مدير المشاريع
+                    </h1>
+                </div>
+                
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="btn btn-icon" title="التنبيهات">
+                            <i class="fas fa-bell"></i>
+                        </button>
+                        
+                        <div class="user-menu">
+                            <button class="user-avatar" id="user-menu-btn">
+                                <i class="fas fa-user"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- الشريط الجانبي -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-view="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>لوحة التحكم</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="projects">
+                            <i class="fas fa-folder-open"></i>
+                            <span>المشاريع</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-view="tasks">
+                            <i class="fas fa-tasks"></i>
+                            <span>المهام</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="main-content">
+            <div id="dashboard-view" class="view active">
+                <div class="view-header">
+                    <h2>لوحة التحكم</h2>
+                    <p>نظرة عامة على مشاريعك ومهامك</p>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">5</div>
+                            <div class="stat-label">إجمالي المشاريع</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">23</div>
+                            <div class="stat-label">إجمالي المهام</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">18</div>
+                            <div class="stat-label">المهام المكتملة</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">2</div>
+                            <div class="stat-label">المهام المتأخرة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- نافذة تسجيل الدخول -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>تسجيل الدخول</h3>
+            </div>
+            <form id="login-form" class="modal-body">
+                <div class="form-group">
+                    <label for="login-email">البريد الإلكتروني</label>
+                    <input type="email" id="login-email" class="form-input" required placeholder="example@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">كلمة المرور</label>
+                    <input type="password" id="login-password" class="form-input" required placeholder="كلمة المرور">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        تسجيل الدخول
+                    </button>
+                </div>
+                <div class="demo-info">
+                    <small>للتجربة: استخدم أي بريد إلكتروني وكلمة مرور</small>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // تطبيق مبسط
+        class SimpleProjectManager {
+            constructor() {
+                this.init();
+            }
+            
+            init() {
+                console.log('تهيئة التطبيق المبسط...');
+                
+                // إخفاء شاشة التحميل بعد ثانيتين
+                setTimeout(() => {
+                    this.hideLoadingScreen();
+                    this.showLoginModal();
+                }, 2000);
+                
+                // ربط أحداث تسجيل الدخول
+                this.bindLoginEvents();
+            }
+            
+            hideLoadingScreen() {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.classList.add('hidden');
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }
+            }
+            
+            showLoginModal() {
+                const modal = document.getElementById('login-modal');
+                if (modal) {
+                    modal.classList.add('active');
+                }
+            }
+            
+            hideLoginModal() {
+                const modal = document.getElementById('login-modal');
+                if (modal) {
+                    modal.classList.remove('active');
+                }
+            }
+            
+            showApp() {
+                const app = document.getElementById('app');
+                if (app) {
+                    app.classList.add('show');
+                }
+                this.hideLoginModal();
+            }
+            
+            bindLoginEvents() {
+                const loginForm = document.getElementById('login-form');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        
+                        const email = document.getElementById('login-email').value;
+                        const password = document.getElementById('login-password').value;
+                        
+                        if (email && password) {
+                            console.log('تسجيل دخول ناجح');
+                            this.showApp();
+                        }
+                    });
+                }
+            }
+        }
+        
+        // تهيئة التطبيق عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+            new SimpleProjectManager();
+        });
+    </script>
+</body>
+</html>
+

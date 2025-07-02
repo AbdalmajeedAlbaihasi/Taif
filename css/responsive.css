@@ -75,22 +75,12 @@
         right: 0;
     }
     
-    .main-header {
-        position: relative;
+    .mobile-menu-toggle {
+        display: block;
     }
     
-    .header-content::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        right: var(--spacing-lg);
-        transform: translateY(-50%);
-        width: 24px;
-        height: 2px;
-        background: var(--text-primary);
-        box-shadow: 0 -8px 0 var(--text-primary), 0 8px 0 var(--text-primary);
-        cursor: pointer;
-        z-index: 1000;
+    .header-center {
+        display: none;
     }
     
     .sidebar-overlay {
@@ -134,6 +124,11 @@
         width: 95%;
         margin: var(--spacing-md);
     }
+    
+    .team-stats {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
 }
 
 /* Mobile Landscape (576px to 767px) */
@@ -144,6 +139,10 @@
     
     .header-left h1 {
         font-size: var(--text-lg);
+    }
+    
+    .header-left .app-title i {
+        display: none;
     }
     
     .main-content {
@@ -200,7 +199,7 @@
         font-size: var(--text-2xl);
     }
     
-    .gantt-chart {
+    .gantt-container {
         height: 400px;
     }
     
@@ -214,24 +213,30 @@
         min-width: auto;
         width: 100%;
     }
+    
+    .view-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Mobile Portrait (up to 575px) */
 @media (max-width: 575px) {
-    .auth-container {
-        padding: var(--spacing-sm);
-    }
-    
-    .auth-form {
-        padding: var(--spacing-lg);
-    }
-    
-    .auth-header h1 {
-        font-size: var(--text-2xl);
-    }
-    
     .header-content {
         height: 60px;
+        padding: 0 var(--spacing-sm);
+    }
+    
+    .header-left .app-title {
+        font-size: var(--text-base);
     }
     
     .sidebar {
@@ -258,20 +263,21 @@
     .btn {
         padding: var(--spacing-sm) var(--spacing-md);
         font-size: var(--text-sm);
-        min-height: 40px;
+        min-height: 44px;
     }
     
     .btn-sm {
         padding: var(--spacing-xs) var(--spacing-sm);
         font-size: var(--text-xs);
-        min-height: 32px;
+        min-height: 40px;
     }
     
     .form-group input,
     .form-group textarea,
     .form-group select {
-        padding: var(--spacing-sm);
+        padding: var(--spacing-md);
         font-size: var(--text-sm);
+        min-height: 44px;
     }
     
     .modal-content {
@@ -279,10 +285,11 @@
         height: 100%;
         border-radius: 0;
         margin: 0;
+        max-height: 100vh;
     }
     
     .modal-header,
-    .modal form {
+    .modal-body {
         padding: var(--spacing-md);
     }
     
@@ -290,10 +297,11 @@
         flex-direction: column;
         text-align: center;
         gap: var(--spacing-md);
+        padding: var(--spacing-lg);
     }
     
-    .stat-content h3 {
-        font-size: var(--text-xl);
+    .stat-content .stat-number {
+        font-size: var(--text-2xl);
     }
     
     .project-card {
@@ -323,6 +331,7 @@
     .task-actions {
         flex-direction: column;
         width: 100%;
+        gap: var(--spacing-xs);
     }
     
     .task-actions .btn {
@@ -350,7 +359,7 @@
         width: auto;
     }
     
-    .gantt-chart {
+    .gantt-container {
         height: 300px;
     }
     
@@ -363,14 +372,63 @@
         height: 60px;
         font-size: var(--text-xl);
     }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+    
+    .view-actions {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+    
+    .view-actions .btn {
+        width: 100%;
+    }
+    
+    .gantt-controls {
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+    
+    .gantt-controls .btn {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .team-stats {
+        padding: var(--spacing-md);
+    }
+    
+    .team-stat {
+        justify-content: center;
+        text-align: center;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+    
+    .dashboard-section {
+        margin-bottom: var(--spacing-lg);
+    }
+    
+    .section-header {
+        padding: var(--spacing-md);
+    }
+    
+    .projects-grid,
+    .tasks-list,
+    .team-grid {
+        padding: var(--spacing-md);
+    }
 }
 
 /* Extra Small Mobile (up to 375px) */
 @media (max-width: 375px) {
-    .auth-form {
-        padding: var(--spacing-md);
-    }
-    
     .main-content {
         padding: var(--spacing-xs);
     }
@@ -401,6 +459,46 @@
         left: var(--spacing-xs);
         right: var(--spacing-xs);
     }
+    
+    .stat-card {
+        padding: var(--spacing-md);
+    }
+    
+    .project-header,
+    .project-body {
+        padding: var(--spacing-sm);
+    }
+    
+    .task-item {
+        padding: var(--spacing-sm);
+    }
+    
+    .team-member {
+        padding: var(--spacing-sm);
+    }
+    
+    .modal-header,
+    .modal-body {
+        padding: var(--spacing-sm);
+    }
+    
+    .section-header {
+        padding: var(--spacing-sm);
+    }
+    
+    .projects-grid,
+    .tasks-list,
+    .team-grid {
+        padding: var(--spacing-sm);
+    }
+    
+    .view-filters {
+        padding: var(--spacing-sm);
+    }
+    
+    .team-stats {
+        padding: var(--spacing-sm);
+    }
 }
 
 /* Touch Device Optimizations */
@@ -429,10 +527,11 @@
     
     .user-avatar {
         min-height: 44px;
+        min-width: 44px;
         padding: var(--spacing-md);
     }
     
-    .close-modal {
+    .modal-close {
         min-height: 44px;
         min-width: 44px;
         padding: var(--spacing-md);
@@ -443,11 +542,21 @@
         min-width: 44px;
         padding: var(--spacing-md);
     }
+    
+    .mobile-menu-toggle {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .btn-icon {
+        min-height: 44px;
+        min-width: 44px;
+    }
 }
 
 /* High DPI Displays */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .loading-spinner i,
+    .loading-spinner,
     .stat-icon,
     .member-avatar {
         -webkit-font-smoothing: antialiased;
@@ -466,7 +575,7 @@
         scroll-behavior: auto !important;
     }
     
-    .loading-spinner i {
+    .loading-spinner {
         animation: none;
     }
 }
@@ -485,10 +594,6 @@
         --border-dark: #64748b;
     }
     
-    .auth-container {
-        background: linear-gradient(135deg, var(--bg-darker), var(--bg-dark));
-    }
-    
     .loading-screen {
         background: linear-gradient(135deg, var(--bg-darker), var(--bg-dark));
     }
@@ -501,12 +606,13 @@
     }
     
     .sidebar,
-    .main-header,
+    .header,
     .modal,
     .notification-container,
     .btn,
     .task-actions,
-    .project-actions {
+    .project-actions,
+    .mobile-menu-toggle {
         display: none !important;
     }
     
@@ -531,8 +637,124 @@
         margin-bottom: 1rem;
     }
     
-    .gantt-chart {
+    .gantt-container {
         height: 400px;
+    }
+}
+
+/* Landscape Orientation on Mobile */
+@media screen and (max-width: 767px) and (orientation: landscape) {
+    .main-content {
+        max-height: calc(100vh - 50px);
+    }
+    
+    .header-content {
+        height: 50px;
+    }
+    
+    .sidebar {
+        top: 50px;
+        height: calc(100vh - 50px);
+    }
+    
+    .modal-content {
+        max-height: 95vh;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .main-content {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .sidebar {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .modal-content {
+        margin-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (max-width: 767px) {
+    .main-content {
+        min-height: calc(100vh - 70px);
+        min-height: calc(100dvh - 70px);
+    }
+}
+
+/* Hover states for desktop only */
+@media (hover: hover) and (pointer: fine) {
+    .project-card:hover,
+    .task-item:hover,
+    .team-member:hover,
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    .btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+    }
+    
+    .nav-link:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+    
+    .user-avatar:hover {
+        transform: scale(1.05);
+    }
+}
+
+/* Focus styles for accessibility */
+.btn:focus,
+.nav-link:focus,
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.user-avatar:focus,
+.modal-close:focus,
+.mobile-menu-toggle:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Skip to main content link for accessibility */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary-color);
+    color: var(--text-white);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 10000;
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn {
+        border: 2px solid currentColor;
+    }
+    
+    .form-input,
+    .form-textarea,
+    .form-select {
+        border: 2px solid var(--text-primary);
+    }
+    
+    .project-card,
+    .task-item,
+    .team-member {
+        border: 2px solid var(--border-dark);
     }
 }
 

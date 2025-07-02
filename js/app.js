@@ -1,50 +1,85 @@
 /**
- * التطبيق الرئيسي لمدير المشاريع
- * يربط جميع المكونات ويدير التنقل والحالة العامة
+ * التطبيق الرئيسي - مدير المشاريع
+ * يدير التنقل والواجهة الرئيسية للتطبيق
  */
 
-class ProjectManagerApp {
+class ProjectManager {
     constructor() {
         this.currentView = 'dashboard';
         this.isInitialized = false;
+        this.isMobile = window.innerWidth <= 991;
         
         // انتظار تحميل DOM
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => this.initialize());
+            document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
-            this.initialize();
+            // تأخير قصير للتأكد من تحميل جميع الملفات
+            setTimeout(() => this.init(), 100);
         }
     }
     
     /**
      * تهيئة التطبيق
      */
-    initialize() {
-        if (this.isInitialized) return;
-        
+    async init() {
         try {
-            // إخفاء شاشة التحميل
+            console.log('بدء تهيئة مدير المشاريع...');
+            
+            // إخفاء شاشة التحميل فوراً
             this.hideLoadingScreen();
             
-            // ربط أحداث التنقل
-            this.bindNavigationEvents();
-            
-            // ربط أحداث عامة
-            this.bindGlobalEvents();
-            
-            // تحميل البيانات إذا كان المستخدم مسجل الدخول
-            if (auth.isUserAuthenticated()) {
-                this.loadData();
+            // التحقق من تحميل جميع المكونات المطلوبة
+            if (!this.checkDependencies()) {
+                console.error('بعض المكونات المطلوبة غير محملة');
+                // محاولة إعادة التهيئة بعد فترة أطول
+                setTimeout(() => this.init(), 1000);
+                return;
             }
             
-            this.isInitialized = true;
+            // ربط الأحداث
+            this.bindEvents();
             
-            console.log('تم تهيئة مدير المشاريع بنجاح');
+            // تحديث الواجهة
+            this.updateUI();
+            
+            // تهيئة المكونات
+            await this.initializeComponents();
+            
+            // تحديث الإحصائيات
+            this.updateDashboardStats();
+            
+            this.isInitialized = true;
+            console.log('تم تحميل مدير المشاريع بنجاح');
             
         } catch (error) {
             console.error('خطأ في تهيئة التطبيق:', error);
-            notifications.error('خطأ', 'حدث خطأ أثناء تهيئة التطبيق');
+            this.showError('حدث خطأ في تحميل التطبيق');
+            // إخفاء شاشة التحميل حتى في حالة الخطأ
+            this.hideLoadingScreen();
         }
+    }
+    
+    /**
+     * التحقق من تحميل جميع المكونات المطلوبة
+     */
+    checkDependencies() {
+        const required = ['utils', 'storage', 'auth'];
+        let allLoaded = true;
+        
+        for (const dep of required) {
+            if (!window[dep]) {
+                console.warn(`المكون ${dep} غير محمل بعد`);
+                allLoaded = false;
+            }
+        }
+        
+        // إذا لم تكن جميع المكونات محملة، انتظر قليلاً
+        if (!allLoaded) {
+            console.log('انتظار تحميل المكونات...');
+            return false;
+        }
+        
+        return true;
     }
     
     /**
@@ -53,525 +88,589 @@ class ProjectManagerApp {
     hideLoadingScreen() {
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
             setTimeout(() => {
-                loadingScreen.classList.add('hidden');
-            }, 1000);
+                loadingScreen.style.display = 'none';
+            }, 500);
+            console.log('تم إخفاء شاشة التحميل');
         }
+    }
+    
+    /**
+     * تهيئة المكونات
+     */
+    async initializeComponents() {
+        // التحقق من وجود المستخدم المسجل
+        if (!auth.isAuthenticated) {
+            console.log('المستخدم غير مسجل، عرض نافذة تسجيل الدخول');
+            setTimeout(() => auth.showLoginModal(), 100);
+            return;
+        }
+        
+        // تحديث معلومات المستخدم في الواجهة
+        this.updateUserInfo();
+        
+        // تحميل البيانات
+        await this.loadData();
+    }
+    
+    /**
+     * تحديث معلومات المستخدم
+     */
+    updateUserInfo() {
+        const user = auth.currentUser;
+        if (user) {
+            const userNameEl = document.getElementById('user-name');
+            const userEmailEl = document.getElementById('user-email');
+            
+            if (userNameEl) userNameEl.textContent = user.name || 'المستخدم';
+            if (userEmailEl) userEmailEl.textContent = user.email || '';
+        }
+    }
+    
+    /**
+     * تحميل البيانات
+     */
+    async loadData() {
+        try {
+            // تحميل المشاريع
+            if (window.projects) {
+                await projects.loadProjects();
+            }
+            
+            // تحميل المهام
+            if (window.tasks) {
+                await tasks.loadTasks();
+            }
+            
+            // تحميل الفريق
+            if (window.team) {
+                await team.loadTeamMembers();
+            }
+            
+            // تحديث مخطط جانت
+            if (window.ganttManager) {
+                ganttManager.updateGanttData();
+            }
+            
+        } catch (error) {
+            console.error('خطأ في تحميل البيانات:', error);
+        }
+    }
+    
+    /**
+     * ربط الأحداث
+     */
+    bindEvents() {
+        // أحداث التنقل
+        this.bindNavigationEvents();
+        
+        // أحداث الجوال
+        this.bindMobileEvents();
+        
+        // أحداث النوافذ
+        this.bindWindowEvents();
+        
+        // أحداث المستخدم
+        this.bindUserEvents();
+        
+        // أحداث البحث
+        this.bindSearchEvents();
     }
     
     /**
      * ربط أحداث التنقل
      */
     bindNavigationEvents() {
-        // روابط التنقل في الشريط الجانبي
-        const navLinks = document.querySelectorAll('.nav-link');
+        const navLinks = document.querySelectorAll('.nav-link[data-view]');
         navLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const viewName = link.getAttribute('data-view');
-                if (viewName) {
-                    this.showView(viewName);
-                }
+                const view = link.getAttribute('data-view');
+                this.showView(view);
             });
         });
-        
-        // زر القائمة للجوال
-        this.bindMobileMenuEvents();
     }
     
     /**
-     * ربط أحداث القائمة للجوال
+     * ربط أحداث الجوال
      */
-    bindMobileMenuEvents() {
-        // إنشاء زر القائمة للجوال
-        const headerContent = document.querySelector('.header-content');
-        if (headerContent && window.innerWidth <= 991) {
-            const menuToggle = DOMUtils.createElement('button', {
-                className: 'mobile-menu-toggle',
-                id: 'mobile-menu-toggle'
-            });
-            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
-            
-            headerContent.insertBefore(menuToggle, headerContent.firstChild);
-            
-            // ربط حدث النقر
-            menuToggle.addEventListener('click', () => {
-                this.toggleMobileMenu();
+    bindMobileEvents() {
+        // إضافة زر القائمة للجوال
+        this.addMobileMenuToggle();
+        
+        // أحداث تغيير حجم الشاشة
+        window.addEventListener('resize', () => {
+            this.handleResize();
+        });
+        
+        // إغلاق الشريط الجانبي عند النقر على الطبقة
+        const overlay = document.getElementById('sidebar-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                this.closeMobileSidebar();
             });
         }
-        
-        // إنشاء طبقة التراكب
-        const overlay = DOMUtils.createElement('div', {
-            className: 'sidebar-overlay',
-            id: 'sidebar-overlay'
-        });
-        document.body.appendChild(overlay);
-        
-        overlay.addEventListener('click', () => {
-            this.closeMobileMenu();
-        });
-        
-        // إغلاق القائمة عند تغيير حجم الشاشة
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 991) {
-                this.closeMobileMenu();
-            }
-        });
     }
     
     /**
-     * تبديل القائمة للجوال
+     * إضافة زر القائمة للجوال
      */
-    toggleMobileMenu() {
+    addMobileMenuToggle() {
+        const headerLeft = document.querySelector('.header-left');
+        if (headerLeft && !document.querySelector('.mobile-menu-toggle')) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'mobile-menu-toggle';
+            toggleBtn.innerHTML = '<i class="fas fa-bars"></i>';
+            toggleBtn.setAttribute('aria-label', 'فتح القائمة');
+            
+            toggleBtn.addEventListener('click', () => {
+                this.toggleMobileSidebar();
+            });
+            
+            headerLeft.insertBefore(toggleBtn, headerLeft.firstChild);
+        }
+    }
+    
+    /**
+     * تبديل الشريط الجانبي للجوال
+     */
+    toggleMobileSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         
         if (sidebar && overlay) {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
+            const isActive = sidebar.classList.contains('active');
+            
+            if (isActive) {
+                this.closeMobileSidebar();
+            } else {
+                this.openMobileSidebar();
+            }
         }
     }
     
     /**
-     * إغلاق القائمة للجوال
+     * فتح الشريط الجانبي للجوال
      */
-    closeMobileMenu() {
+    openMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (sidebar && overlay) {
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    /**
+     * إغلاق الشريط الجانبي للجوال
+     */
+    closeMobileSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         
         if (sidebar && overlay) {
             sidebar.classList.remove('active');
             overlay.classList.remove('active');
+            document.body.style.overflow = '';
         }
     }
     
     /**
-     * ربط الأحداث العامة
+     * معالجة تغيير حجم الشاشة
      */
-    bindGlobalEvents() {
-        // مفاتيح الاختصار
+    handleResize() {
+        const wasMobile = this.isMobile;
+        this.isMobile = window.innerWidth <= 991;
+        
+        // إذا تغير من جوال إلى سطح مكتب
+        if (wasMobile && !this.isMobile) {
+            this.closeMobileSidebar();
+        }
+    }
+    
+    /**
+     * ربط أحداث النوافذ
+     */
+    bindWindowEvents() {
+        // إغلاق النوافذ المنبثقة عند النقر خارجها
+        document.addEventListener('click', (e) => {
+            // إغلاق قائمة المستخدم
+            const userDropdown = document.getElementById('user-dropdown');
+            const userMenuBtn = document.getElementById('user-menu-btn');
+            
+            if (userDropdown && userMenuBtn) {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove('active');
+                }
+            }
+        });
+        
+        // إغلاق النوافذ بمفتاح Escape
         document.addEventListener('keydown', (e) => {
-            this.handleKeyboardShortcuts(e);
-        });
-        
-        // حفظ تلقائي عند إغلاق النافذة
-        window.addEventListener('beforeunload', (e) => {
-            this.handleBeforeUnload(e);
-        });
-        
-        // تحديث الوقت كل دقيقة
-        setInterval(() => {
-            this.updateTimeElements();
-        }, 60000);
-        
-        // فحص الاتصال بالإنترنت
-        window.addEventListener('online', () => {
-            notifications.success('متصل', 'تم استعادة الاتصال بالإنترنت');
-        });
-        
-        window.addEventListener('offline', () => {
-            notifications.warning('غير متصل', 'تم فقدان الاتصال بالإنترنت');
+            if (e.key === 'Escape') {
+                // إغلاق النوافذ المنبثقة
+                const modals = document.querySelectorAll('.modal.active');
+                modals.forEach(modal => {
+                    modal.classList.remove('active');
+                });
+                
+                // إغلاق الشريط الجانبي للجوال
+                if (this.isMobile) {
+                    this.closeMobileSidebar();
+                }
+                
+                // إغلاق قائمة المستخدم
+                const userDropdown = document.getElementById('user-dropdown');
+                if (userDropdown) {
+                    userDropdown.classList.remove('active');
+                }
+            }
         });
     }
     
     /**
-     * معالج مفاتيح الاختصار
-     * @param {KeyboardEvent} e - حدث لوحة المفاتيح
+     * ربط أحداث المستخدم
      */
-    handleKeyboardShortcuts(e) {
-        // Ctrl/Cmd + مفاتيح أخرى
-        if (e.ctrlKey || e.metaKey) {
-            switch (e.key) {
-                case 'n':
-                    e.preventDefault();
-                    if (this.currentView === 'projects') {
-                        projects.showAddProjectModal();
-                    } else if (this.currentView === 'tasks') {
-                        tasks.showAddTaskModal();
-                    }
-                    break;
-                    
-                case 's':
-                    e.preventDefault();
-                    this.saveData();
-                    break;
-                    
-                case '/':
-                    e.preventDefault();
-                    this.focusSearch();
-                    break;
-            }
-        }
+    bindUserEvents() {
+        const userMenuBtn = document.getElementById('user-menu-btn');
+        const userDropdown = document.getElementById('user-dropdown');
         
-        // مفاتيح التنقل
-        if (e.altKey) {
-            switch (e.key) {
-                case '1':
-                    e.preventDefault();
-                    this.showView('dashboard');
-                    break;
-                case '2':
-                    e.preventDefault();
-                    this.showView('projects');
-                    break;
-                case '3':
-                    e.preventDefault();
-                    this.showView('tasks');
-                    break;
-                case '4':
-                    e.preventDefault();
-                    this.showView('gantt');
-                    break;
-                case '5':
-                    e.preventDefault();
-                    this.showView('team');
-                    break;
-            }
+        if (userMenuBtn && userDropdown) {
+            userMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.classList.toggle('active');
+            });
         }
     }
     
     /**
-     * معالج إغلاق النافذة
-     * @param {BeforeUnloadEvent} e - حدث إغلاق النافذة
+     * ربط أحداث البحث
      */
-    handleBeforeUnload(e) {
-        // حفظ البيانات قبل الإغلاق
-        this.saveData();
-        
-        // تحذير إذا كانت هناك تغييرات غير محفوظة
-        const hasUnsavedChanges = this.checkUnsavedChanges();
-        if (hasUnsavedChanges) {
-            e.preventDefault();
-            e.returnValue = 'لديك تغييرات غير محفوظة. هل أنت متأكد من الخروج؟';
-            return e.returnValue;
+    bindSearchEvents() {
+        const searchInput = document.querySelector('.search-input');
+        if (searchInput) {
+            let searchTimeout;
+            
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
         }
+    }
+    
+    /**
+     * معالجة البحث
+     */
+    handleSearch(query) {
+        if (!query.trim()) {
+            this.clearSearchResults();
+            return;
+        }
+        
+        // البحث في المشاريع والمهام
+        const searchResults = {
+            projects: window.projects ? projects.searchProjects(query) : [],
+            tasks: window.tasks ? tasks.searchTasks(query) : []
+        };
+        
+        this.displaySearchResults(searchResults);
+    }
+    
+    /**
+     * عرض نتائج البحث
+     */
+    displaySearchResults(results) {
+        console.log('نتائج البحث:', results);
+    }
+    
+    /**
+     * مسح نتائج البحث
+     */
+    clearSearchResults() {
+        // مسح نتائج البحث المعروضة
     }
     
     /**
      * عرض صفحة معينة
-     * @param {string} viewName - اسم الصفحة
      */
     showView(viewName) {
         // إخفاء جميع الصفحات
         const views = document.querySelectorAll('.view');
-        views.forEach(view => {
-            view.classList.remove('active');
-        });
+        views.forEach(view => view.classList.remove('active'));
         
-        // إزالة الحالة النشطة من روابط التنقل
+        // إزالة الحالة النشطة من جميع روابط التنقل
         const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.classList.remove('active');
-        });
+        navLinks.forEach(link => link.classList.remove('active'));
         
-        // إظهار الصفحة المطلوبة
+        // عرض الصفحة المطلوبة
         const targetView = document.getElementById(`${viewName}-view`);
         if (targetView) {
             targetView.classList.add('active');
             this.currentView = viewName;
-            
-            // تفعيل رابط التنقل المناسب
-            const activeNavLink = document.querySelector(`[data-view="${viewName}"]`);
-            if (activeNavLink) {
-                activeNavLink.classList.add('active');
-            }
-            
-            // تحميل بيانات الصفحة
-            this.loadViewData(viewName);
-            
-            // إغلاق القائمة للجوال
-            this.closeMobileMenu();
         }
+        
+        // تفعيل رابط التنقل المناسب
+        const activeNavLink = document.querySelector(`[data-view="${viewName}"]`);
+        if (activeNavLink) {
+            activeNavLink.classList.add('active');
+        }
+        
+        // إغلاق الشريط الجانبي للجوال
+        if (this.isMobile) {
+            this.closeMobileSidebar();
+        }
+        
+        // تحديث محتوى الصفحة
+        this.updateViewContent(viewName);
     }
     
     /**
-     * تحميل بيانات الصفحة
-     * @param {string} viewName - اسم الصفحة
+     * تحديث محتوى الصفحة
      */
-    loadViewData(viewName) {
+    updateViewContent(viewName) {
         switch (viewName) {
             case 'dashboard':
-                this.loadDashboardData();
+                this.updateDashboardStats();
+                this.loadRecentProjects();
+                this.loadUpcomingTasks();
                 break;
-                
             case 'projects':
-                if (window.projects) {
-                    projects.loadProjects();
-                }
+                if (window.projects) projects.renderProjects();
                 break;
-                
             case 'tasks':
-                if (window.tasks) {
-                    tasks.loadTasks();
-                }
+                if (window.tasks) tasks.renderTasks();
                 break;
-                
             case 'gantt':
                 if (window.ganttManager) {
                     ganttManager.initializeGantt();
                 }
                 break;
-                
             case 'team':
                 if (window.team) {
-                    team.loadTeamMembers();
+                    team.renderTeamMembers();
                 }
                 break;
         }
     }
     
     /**
-     * تحميل بيانات لوحة التحكم
+     * تحديث إحصائيات لوحة التحكم
      */
-    loadDashboardData() {
-        // تحديث الإحصائيات
-        if (window.projects) {
-            projects.loadProjects();
+    updateDashboardStats() {
+        const allProjects = window.projects ? projects.getAllProjects() : [];
+        const allTasks = window.tasks ? tasks.getAllTasks() : [];
+        
+        // إجمالي المشاريع
+        const totalProjectsEl = document.getElementById('total-projects');
+        if (totalProjectsEl) {
+            totalProjectsEl.textContent = allProjects.length;
         }
         
-        if (window.tasks) {
-            tasks.loadTasks();
+        // إجمالي المهام
+        const totalTasksEl = document.getElementById('total-tasks');
+        if (totalTasksEl) {
+            totalTasksEl.textContent = allTasks.length;
         }
-    }
-    
-    /**
-     * تحميل جميع البيانات
-     */
-    loadData() {
-        try {
-            // تحميل المشاريع
-            if (window.projects) {
-                projects.loadProjects();
-            }
-            
-            // تحميل المهام
-            if (window.tasks) {
-                tasks.loadTasks();
-            }
-            
-            // تحميل أعضاء الفريق
-            if (window.team) {
-                team.loadTeamMembers();
-            }
-            
-            // تحديث مخطط جانت
-            if (window.ganttManager) {
-                setTimeout(() => {
-                    ganttManager.refresh();
-                }, 1000);
-            }
-            
-        } catch (error) {
-            console.error('خطأ في تحميل البيانات:', error);
-            notifications.error('خطأ', 'حدث خطأ أثناء تحميل البيانات');
+        
+        // المهام المكتملة
+        const completedTasks = allTasks.filter(task => task.status === 'completed');
+        const completedTasksEl = document.getElementById('completed-tasks');
+        if (completedTasksEl) {
+            completedTasksEl.textContent = completedTasks.length;
         }
-    }
-    
-    /**
-     * حفظ البيانات
-     */
-    saveData() {
-        try {
-            // البيانات محفوظة تلقائياً في LocalStorage
-            console.log('تم حفظ البيانات');
-        } catch (error) {
-            console.error('خطأ في حفظ البيانات:', error);
-        }
-    }
-    
-    /**
-     * التحقق من وجود تغييرات غير محفوظة
-     * @returns {boolean} true إذا كانت هناك تغييرات غير محفوظة
-     */
-    checkUnsavedChanges() {
-        // في هذا التطبيق، البيانات محفوظة تلقائياً
-        return false;
-    }
-    
-    /**
-     * تركيز على حقل البحث
-     */
-    focusSearch() {
-        const searchInput = document.querySelector('input[type="search"], input[placeholder*="بحث"]');
-        if (searchInput) {
-            searchInput.focus();
-        }
-    }
-    
-    /**
-     * تحديث عناصر الوقت
-     */
-    updateTimeElements() {
-        const timeElements = document.querySelectorAll('[data-time]');
-        timeElements.forEach(element => {
-            const timestamp = element.getAttribute('data-time');
-            if (timestamp) {
-                element.textContent = DateUtils.formatDate(timestamp);
-            }
+        
+        // المهام المتأخرة
+        const overdueTasks = allTasks.filter(task => {
+            const endDate = new Date(task.endDate);
+            const today = new Date();
+            return endDate < today && task.status !== 'completed';
         });
-    }
-    
-    /**
-     * تصدير البيانات
-     */
-    exportData() {
-        try {
-            const data = storage.exportData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], {
-                type: 'application/json'
-            });
-            
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `project-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            notifications.success('تم التصدير', 'تم تصدير البيانات بنجاح');
-            
-        } catch (error) {
-            console.error('خطأ في تصدير البيانات:', error);
-            notifications.error('خطأ', 'حدث خطأ أثناء تصدير البيانات');
+        const overdueTasksEl = document.getElementById('overdue-tasks');
+        if (overdueTasksEl) {
+            overdueTasksEl.textContent = overdueTasks.length;
         }
     }
     
     /**
-     * استيراد البيانات
-     * @param {File} file - ملف البيانات
+     * تحميل المشاريع الحديثة
      */
-    importData(file) {
-        if (!file) return;
+    loadRecentProjects() {
+        if (!window.projects) return;
         
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                const success = storage.importData(data);
-                
-                if (success) {
-                    notifications.success('تم الاستيراد', 'تم استيراد البيانات بنجاح');
-                    this.loadData();
-                } else {
-                    notifications.error('خطأ', 'فشل في استيراد البيانات');
-                }
-                
-            } catch (error) {
-                console.error('خطأ في استيراد البيانات:', error);
-                notifications.error('خطأ', 'ملف البيانات غير صحيح');
-            }
-        };
+        const recentProjects = projects.getRecentProjects(3);
+        const container = document.getElementById('recent-projects');
         
-        reader.readAsText(file);
-    }
-    
-    /**
-     * إعادة تعيين التطبيق
-     */
-    resetApp() {
-        const confirmed = confirm('هل أنت متأكد من إعادة تعيين التطبيق؟\n\nسيتم حذف جميع البيانات نهائياً.');
-        
-        if (confirmed) {
-            storage.clearAllData();
-            auth.handleLogout();
-            notifications.info('تم الإعادة', 'تم إعادة تعيين التطبيق بنجاح');
-        }
-    }
-    
-    /**
-     * الحصول على معلومات التطبيق
-     * @returns {Object} معلومات التطبيق
-     */
-    getAppInfo() {
-        return {
-            name: 'مدير المشاريع',
-            version: '1.0.0',
-            author: 'فريق التطوير',
-            description: 'نظام متكامل لإدارة المشاريع والمهام',
-            features: [
-                'إدارة المشاريع والمهام',
-                'مخطط جانت التفاعلي',
-                'نظام التنبيهات الذكي',
-                'إدارة الفريق والصلاحيات',
-                'واجهة متجاوبة',
-                'تخزين محلي آمن'
-            ]
-        };
-    }
-    
-    /**
-     * عرض معلومات التطبيق
-     */
-    showAbout() {
-        const info = this.getAppInfo();
-        
-        notifications.showCustom({
-            title: info.name,
-            message: `
-                <div class="about-info">
-                    <p><strong>الإصدار:</strong> ${info.version}</p>
-                    <p><strong>المطور:</strong> ${info.author}</p>
-                    <p><strong>الوصف:</strong> ${info.description}</p>
-                    <div class="features-list">
-                        <strong>الميزات:</strong>
-                        <ul>
-                            ${info.features.map(feature => `<li>${feature}</li>`).join('')}
-                        </ul>
+        if (container) {
+            if (recentProjects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-folder-open"></i>
+                        <p>لا توجد مشاريع حديثة</p>
+                        <button class="btn btn-primary" onclick="projects.showAddProjectModal()">
+                            <i class="fas fa-plus"></i>
+                            إضافة مشروع جديد
+                        </button>
                     </div>
-                </div>
-            `,
-            type: 'info',
-            duration: 0,
-            actions: [
-                {
-                    text: 'إغلاق',
-                    type: 'secondary',
-                    handler: () => {}
-                }
-            ]
-        });
+                `;
+            } else {
+                container.innerHTML = recentProjects.map(project => `
+                    <div class="project-card">
+                        <div class="project-header">
+                            <div class="project-color" style="background: ${project.color}"></div>
+                            <h4 class="project-title">${project.name}</h4>
+                            <p class="project-description">${project.description || ''}</p>
+                        </div>
+                        <div class="project-body">
+                            <div class="project-meta">
+                                <span class="project-status ${project.status}">${this.getStatusText(project.status)}</span>
+                                <span class="project-priority ${project.priority}">${this.getPriorityText(project.priority)}</span>
+                            </div>
+                            <div class="project-progress">
+                                <div class="progress-label">
+                                    <span>التقدم</span>
+                                    <span>${project.progress || 0}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${project.progress || 0}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
     }
     
     /**
-     * الحصول على الصفحة الحالية
-     * @returns {string} اسم الصفحة الحالية
+     * تحميل المهام القادمة
      */
-    getCurrentView() {
-        return this.currentView;
+    loadUpcomingTasks() {
+        if (!window.tasks) return;
+        
+        const upcomingTasks = tasks.getUpcomingTasks(5);
+        const container = document.getElementById('upcoming-tasks-list');
+        
+        if (container) {
+            if (upcomingTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <p>لا توجد مهام قادمة</p>
+                        <button class="btn btn-primary" onclick="tasks.showAddTaskModal()">
+                            <i class="fas fa-plus"></i>
+                            إضافة مهمة جديدة
+                        </button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = upcomingTasks.map(task => `
+                    <div class="task-item">
+                        <div class="task-header">
+                            <h4 class="task-title">${task.name}</h4>
+                            <span class="task-status ${task.status}">${this.getStatusText(task.status)}</span>
+                        </div>
+                        <div class="task-meta">
+                            <span class="task-project">${window.projects ? projects.getProjectName(task.projectId) : ''}</span>
+                            <span class="task-priority ${task.priority}">${this.getPriorityText(task.priority)}</span>
+                        </div>
+                        <div class="task-dates">
+                            <span>تاريخ الانتهاء: ${window.utils ? utils.formatDate(task.endDate) : task.endDate}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
     }
     
     /**
-     * التحقق من حالة التهيئة
-     * @returns {boolean} true إذا كان التطبيق مهيأ
+     * الحصول على نص الحالة
      */
-    isReady() {
-        return this.isInitialized;
+    getStatusText(status) {
+        const statusTexts = {
+            'active': 'نشط',
+            'completed': 'مكتمل',
+            'on-hold': 'متوقف',
+            'pending': 'قيد الانتظار',
+            'in-progress': 'جاري',
+            'overdue': 'متأخر'
+        };
+        return statusTexts[status] || status;
+    }
+    
+    /**
+     * الحصول على نص الأولوية
+     */
+    getPriorityText(priority) {
+        const priorityTexts = {
+            'high': 'عالية',
+            'medium': 'متوسطة',
+            'low': 'منخفضة'
+        };
+        return priorityTexts[priority] || priority;
+    }
+    
+    /**
+     * تحديث الواجهة
+     */
+    updateUI() {
+        // تحديث عداد التنبيهات
+        this.updateNotificationBadge();
+        
+        // تحديث معلومات المستخدم
+        this.updateUserInfo();
+    }
+    
+    /**
+     * تحديث عداد التنبيهات
+     */
+    updateNotificationBadge() {
+        const badge = document.querySelector('.notification-badge');
+        if (badge && window.notifications) {
+            const unreadCount = notifications.getUnreadCount();
+            badge.textContent = unreadCount;
+            badge.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+    }
+    
+    /**
+     * عرض رسالة خطأ
+     */
+    showError(message) {
+        if (window.notifications) {
+            notifications.show(message, 'error');
+        } else {
+            alert(message);
+        }
+    }
+    
+    /**
+     * عرض رسالة نجاح
+     */
+    showSuccess(message) {
+        if (window.notifications) {
+            notifications.show(message, 'success');
+        }
     }
 }
 
-// إنشاء مثيل واحد من التطبيق
-window.app = new ProjectManagerApp();
-
-// إضافة أحداث عامة للنافذة
-window.addEventListener('load', () => {
-    console.log('تم تحميل مدير المشاريع');
+// تهيئة التطبيق عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM محمل، بدء تهيئة التطبيق...');
+    window.app = new ProjectManager();
 });
 
-// معالج الأخطاء العامة
-window.addEventListener('error', (e) => {
-    console.error('خطأ في التطبيق:', e.error);
-    if (window.notifications) {
-        notifications.error('خطأ', 'حدث خطأ غير متوقع في التطبيق');
-    }
-});
-
-// معالج الأخطاء غير المعالجة في Promise
-window.addEventListener('unhandledrejection', (e) => {
-    console.error('خطأ غير معالج في Promise:', e.reason);
-    if (window.notifications) {
-        notifications.error('خطأ', 'حدث خطأ في معالجة البيانات');
-    }
-});
+// تهيئة احتياطية في حالة عدم تشغيل DOMContentLoaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+        if (!window.app) {
+            console.log('تهيئة احتياطية للتطبيق...');
+            window.app = new ProjectManager();
+        }
+    }, 100);
+}
 
