@@ -19,25 +19,12 @@ class AuthManager {
      * التحقق من وجود جلسة نشطة
      */
     checkExistingSession() {
-        console.log('التحقق من الجلسة النشطة...');
-        
-        // التأكد من تحميل storage قبل الاستخدام
-        if (typeof window.storage === 'undefined') {
-            console.log('storage غير محمل بعد، انتظار...');
-            setTimeout(() => this.checkExistingSession(), 100);
-            return;
-        }
-        
-        console.log('storage محمل، التحقق من المستخدم...');
         const savedUser = storage.getCurrentUser();
-        
         if (savedUser) {
-            console.log('تم العثور على مستخدم محفوظ:', savedUser);
             this.currentUser = savedUser;
             this.isAuthenticated = true;
             this.showApp();
         } else {
-            console.log('لا يوجد مستخدم محفوظ، عرض شاشة تسجيل الدخول');
             this.showAuth();
         }
     }
@@ -47,405 +34,406 @@ class AuthManager {
      */
     bindEvents() {
         // نموذج تسجيل الدخول
-        const loginForm = document.getElementById('login-form');
+        const loginForm = document.getElementById('loginForm');
         if (loginForm) {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
         
         // نموذج إنشاء الحساب
-        const registerForm = document.getElementById('register-form');
+        const registerForm = document.getElementById('registerForm');
         if (registerForm) {
             registerForm.addEventListener('submit', (e) => this.handleRegister(e));
         }
         
-        // إغلاق النوافذ عند النقر خارجها
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                this.hideAllModals();
-            }
-        });
+        // أزرار التبديل بين النماذج
+        const showRegisterBtn = document.getElementById('show-register');
+        const showLoginBtn = document.getElementById('show-login');
         
-        // إغلاق النوافذ بمفتاح Escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.hideAllModals();
-            }
-        });
+        if (showRegisterBtn) {
+            showRegisterBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showRegisterForm();
+            });
+        }
+        
+        if (showLoginBtn) {
+            showLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showLoginForm();
+            });
+        }
+        
+        // زر تسجيل الخروج
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.handleLogout();
+            });
+        }
+        
+        // قائمة المستخدم
+        const userMenuBtn = document.getElementById('user-menu-btn');
+        const userDropdown = document.getElementById('user-dropdown');
+        
+        if (userMenuBtn && userDropdown) {
+            userMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                userDropdown.classList.toggle('active');
+            });
+            
+            // إغلاق القائمة عند النقر خارجها
+            document.addEventListener('click', (e) => {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove('active');
+                }
+            });
+        }
     }
     
     /**
-     * معالجة تسجيل الدخول
+     * معالج تسجيل الدخول
+     * @param {Event} event - حدث النموذج
      */
-    async handleLogin(e) {
-        e.preventDefault();
+    async handleLogin(event) {
+        event.preventDefault();
         
-        const email = document.getElementById('login-email')?.value;
-        const password = document.getElementById('login-password')?.value;
+        const form = event.target;
+        const formData = new FormData(form);
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
         
-        if (!email || !password) {
-            this.showError('يرجى ملء جميع الحقول');
-            return;
-        }
-        
-        if (!this.isValidEmail(email)) {
-            this.showError('يرجى إدخال بريد إلكتروني صحيح');
+        // التحقق من صحة البيانات
+        if (!this.validateLoginForm(email, password)) {
             return;
         }
         
         try {
-            // محاكاة عملية تسجيل الدخول
+            // إظهار حالة التحميل
+            this.setFormLoading(form, true);
+            
+            // محاولة تسجيل الدخول
             const user = await this.authenticateUser(email, password);
             
             if (user) {
+                // تسجيل دخول ناجح
                 this.currentUser = user;
                 this.isAuthenticated = true;
-                
-                // حفظ بيانات المستخدم
                 storage.setCurrentUser(user);
                 
-                // إخفاء نافذة تسجيل الدخول
-                this.hideLoginModal();
+                // إظهار رسالة نجاح
+                notifications.show('تم تسجيل الدخول بنجاح', 'مرحباً بك في مدير المشاريع', 'success');
                 
-                // عرض التطبيق
-                this.showApp();
-                
-                // عرض رسالة ترحيب
-                this.showSuccess(`مرحباً ${user.name}! تم تسجيل الدخول بنجاح`);
+                // الانتقال إلى التطبيق
+                setTimeout(() => {
+                    this.showApp();
+                }, 1000);
                 
             } else {
-                this.showError('بيانات الدخول غير صحيحة');
+                // فشل تسجيل الدخول
+                notifications.show('خطأ في تسجيل الدخول', 'البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error');
             }
             
         } catch (error) {
             console.error('خطأ في تسجيل الدخول:', error);
-            this.showError('حدث خطأ في تسجيل الدخول');
+            notifications.show('خطأ', 'حدث خطأ أثناء تسجيل الدخول', 'error');
+        } finally {
+            this.setFormLoading(form, false);
         }
     }
     
     /**
-     * معالجة إنشاء الحساب
+     * معالج إنشاء الحساب
+     * @param {Event} event - حدث النموذج
      */
-    async handleRegister(e) {
-        e.preventDefault();
+    async handleRegister(event) {
+        event.preventDefault();
         
-        const name = document.getElementById('register-name')?.value;
-        const email = document.getElementById('register-email')?.value;
-        const password = document.getElementById('register-password')?.value;
-        const confirmPassword = document.getElementById('register-confirm-password')?.value;
+        const form = event.target;
+        const name = document.getElementById('registerName').value.trim();
+        const email = document.getElementById('registerEmail').value.trim();
+        const password = document.getElementById('registerPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
         
-        if (!name || !email || !password || !confirmPassword) {
-            this.showError('يرجى ملء جميع الحقول');
-            return;
-        }
-        
-        if (!this.isValidEmail(email)) {
-            this.showError('يرجى إدخال بريد إلكتروني صحيح');
-            return;
-        }
-        
-        if (password.length < 6) {
-            this.showError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            this.showError('كلمات المرور غير متطابقة');
+        // التحقق من صحة البيانات
+        if (!this.validateRegisterForm(name, email, password, confirmPassword)) {
             return;
         }
         
         try {
-            // محاكاة عملية إنشاء الحساب
-            const user = await this.createUser(name, email, password);
+            // إظهار حالة التحميل
+            this.setFormLoading(form, true);
             
-            if (user) {
-                this.currentUser = user;
-                this.isAuthenticated = true;
-                
-                // حفظ بيانات المستخدم
-                storage.setCurrentUser(user);
-                
-                // إخفاء نافذة إنشاء الحساب
-                this.hideRegisterModal();
-                
-                // عرض التطبيق
-                this.showApp();
-                
-                // عرض رسالة ترحيب
-                this.showSuccess(`مرحباً ${user.name}! تم إنشاء الحساب بنجاح`);
-                
-            } else {
-                this.showError('فشل في إنشاء الحساب');
+            // التحقق من عدم وجود المستخدم مسبقاً
+            const existingUser = storage.findUserByEmail(email);
+            if (existingUser) {
+                notifications.show('خطأ', 'يوجد حساب مسجل بهذا البريد الإلكتروني مسبقاً', 'error');
+                return;
             }
+            
+            // إنشاء المستخدم الجديد
+            const newUser = storage.addUser({
+                name,
+                email,
+                password: this.hashPassword(password) // تشفير كلمة المرور
+            });
+            
+            // تسجيل دخول تلقائي
+            this.currentUser = newUser;
+            this.isAuthenticated = true;
+            storage.setCurrentUser(newUser);
+            
+            // إظهار رسالة نجاح
+            notifications.show('تم إنشاء الحساب بنجاح', 'مرحباً بك في مدير المشاريع', 'success');
+            
+            // الانتقال إلى التطبيق
+            setTimeout(() => {
+                this.showApp();
+            }, 1000);
             
         } catch (error) {
             console.error('خطأ في إنشاء الحساب:', error);
-            this.showError('حدث خطأ في إنشاء الحساب');
+            notifications.show('خطأ', 'حدث خطأ أثناء إنشاء الحساب', 'error');
+        } finally {
+            this.setFormLoading(form, false);
         }
     }
     
     /**
-     * مصادقة المستخدم (محاكاة مع تحقق)
-     */
-    async authenticateUser(email, password) {
-        // محاكاة تأخير الشبكة
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // التحقق من وجود المستخدم في قاعدة البيانات المحلية
-        const registeredUsers = storage.getRegisteredUsers() || [];
-        const user = registeredUsers.find(u => u.email === email && u.password === password);
-        
-        if (user) {
-            // تحديث وقت آخر دخول
-            user.lastLogin = new Date().toISOString();
-            
-            // تحديث قاعدة البيانات
-            const updatedUsers = registeredUsers.map(u => u.id === user.id ? user : u);
-            storage.setRegisteredUsers(updatedUsers);
-            
-            // إرجاع نسخة من المستخدم بدون كلمة المرور
-            const { password: _, ...userWithoutPassword } = user;
-            return userWithoutPassword;
-        }
-        
-        return null; // المستخدم غير موجود أو كلمة المرور خاطئة
-    }
-    
-    /**
-     * إنشاء مستخدم جديد (محاكاة مع تحقق)
-     */
-    async createUser(name, email, password) {
-        // محاكاة تأخير الشبكة
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // التحقق من عدم وجود المستخدم مسبقاً
-        const registeredUsers = storage.getRegisteredUsers() || [];
-        const existingUser = registeredUsers.find(u => u.email === email);
-        
-        if (existingUser) {
-            throw new Error('البريد الإلكتروني مستخدم مسبقاً');
-        }
-        
-        // إنشاء مستخدم جديد
-        const user = {
-            id: utils.generateId(),
-            name: name,
-            email: email,
-            password: password, // في التطبيق الحقيقي يجب تشفير كلمة المرور
-            role: 'admin',
-            avatar: null,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-        };
-        
-        // إضافة المستخدم لقاعدة البيانات المحلية
-        registeredUsers.push(user);
-        storage.setRegisteredUsers(registeredUsers);
-        
-        // إرجاع نسخة من المستخدم بدون كلمة المرور
-        const { password: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-    }
-    
-    /**
-     * استخراج الاسم من البريد الإلكتروني
-     */
-    extractNameFromEmail(email) {
-        const username = email.split('@')[0];
-        return username.charAt(0).toUpperCase() + username.slice(1);
-    }
-    
-    /**
-     * التحقق من صحة البريد الإلكتروني
-     */
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-    
-    /**
-     * تسجيل الخروج
+     * معالج تسجيل الخروج
      */
     handleLogout() {
-        // مسح بيانات المستخدم
+        // مسح بيانات الجلسة
         this.currentUser = null;
         this.isAuthenticated = false;
-        
-        // مسح البيانات المحفوظة
         storage.clearCurrentUser();
         
-        // إخفاء التطبيق وعرض شاشة تسجيل الدخول
-        this.showAuth();
+        // إظهار رسالة
+        notifications.show('تم تسجيل الخروج', 'شكراً لاستخدام مدير المشاريع', 'info');
         
-        // عرض رسالة تأكيد
-        this.showSuccess('تم تسجيل الخروج بنجاح');
+        // الانتقال إلى صفحة المصادقة
+        setTimeout(() => {
+            this.showAuth();
+        }, 1000);
     }
     
     /**
-     * عرض شاشة المصادقة
+     * التحقق من صحة بيانات تسجيل الدخول
+     * @param {string} email - البريد الإلكتروني
+     * @param {string} password - كلمة المرور
+     * @returns {boolean} true إذا كانت البيانات صحيحة
+     */
+    validateLoginForm(email, password) {
+        const errors = [];
+        
+        if (!email) {
+            errors.push('البريد الإلكتروني مطلوب');
+        } else if (!ValidationUtils.isValidEmail(email)) {
+            errors.push('البريد الإلكتروني غير صحيح');
+        }
+        
+        if (!password) {
+            errors.push('كلمة المرور مطلوبة');
+        }
+        
+        if (errors.length > 0) {
+            notifications.show('خطأ في البيانات', errors.join('<br>'), 'error');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * التحقق من صحة بيانات إنشاء الحساب
+     * @param {string} name - الاسم
+     * @param {string} email - البريد الإلكتروني
+     * @param {string} password - كلمة المرور
+     * @param {string} confirmPassword - تأكيد كلمة المرور
+     * @returns {boolean} true إذا كانت البيانات صحيحة
+     */
+    validateRegisterForm(name, email, password, confirmPassword) {
+        const errors = [];
+        
+        if (!name || name.length < 2) {
+            errors.push('الاسم يجب أن يكون حرفين على الأقل');
+        }
+        
+        if (!email) {
+            errors.push('البريد الإلكتروني مطلوب');
+        } else if (!ValidationUtils.isValidEmail(email)) {
+            errors.push('البريد الإلكتروني غير صحيح');
+        }
+        
+        const passwordValidation = ValidationUtils.validatePassword(password);
+        if (!passwordValidation.isValid) {
+            errors.push(...passwordValidation.errors);
+        }
+        
+        if (password !== confirmPassword) {
+            errors.push('كلمة المرور وتأكيد كلمة المرور غير متطابقتين');
+        }
+        
+        if (errors.length > 0) {
+            notifications.show('خطأ في البيانات', errors.join('<br>'), 'error');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * التحقق من صحة بيانات المستخدم
+     * @param {string} email - البريد الإلكتروني
+     * @param {string} password - كلمة المرور
+     * @returns {Object|null} المستخدم أو null
+     */
+    async authenticateUser(email, password) {
+        const user = storage.findUserByEmail(email);
+        
+        if (!user) {
+            return null;
+        }
+        
+        // التحقق من كلمة المرور
+        const hashedPassword = this.hashPassword(password);
+        if (user.password !== hashedPassword) {
+            return null;
+        }
+        
+        // التحقق من حالة المستخدم
+        if (!user.isActive) {
+            return null;
+        }
+        
+        return user;
+    }
+    
+    /**
+     * تشفير كلمة المرور (تشفير بسيط للعرض التوضيحي)
+     * في التطبيق الحقيقي يجب استخدام تشفير أقوى
+     * @param {string} password - كلمة المرور
+     * @returns {string} كلمة المرور المشفرة
+     */
+    hashPassword(password) {
+        // تشفير بسيط باستخدام btoa (للعرض التوضيحي فقط)
+        return btoa(password + 'project_manager_salt');
+    }
+    
+    /**
+     * تعيين حالة التحميل للنموذج
+     * @param {HTMLFormElement} form - النموذج
+     * @param {boolean} loading - حالة التحميل
+     */
+    setFormLoading(form, loading) {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const inputs = form.querySelectorAll('input');
+        
+        if (loading) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+            inputs.forEach(input => input.disabled = true);
+        } else {
+            submitBtn.disabled = false;
+            inputs.forEach(input => input.disabled = false);
+            
+            // استعادة النص الأصلي للزر
+            if (form.id === 'loginForm') {
+                submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> تسجيل الدخول';
+            } else if (form.id === 'registerForm') {
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> إنشاء الحساب';
+            }
+        }
+    }
+    
+    /**
+     * إظهار نموذج تسجيل الدخول
+     */
+    showLoginForm() {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        
+        if (loginForm && registerForm) {
+            loginForm.classList.add('active');
+            registerForm.classList.remove('active');
+        }
+    }
+    
+    /**
+     * إظهار نموذج إنشاء الحساب
+     */
+    showRegisterForm() {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        
+        if (loginForm && registerForm) {
+            loginForm.classList.remove('active');
+            registerForm.classList.add('active');
+        }
+    }
+    
+    /**
+     * إظهار صفحة المصادقة
      */
     showAuth() {
-        console.log('عرض شاشة المصادقة');
-        const app = document.getElementById('app');
-        if (app) {
-            app.style.display = 'none';
-        }
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const loadingScreen = document.getElementById('loading-screen');
         
-        // عرض نافذة تسجيل الدخول
-        this.showLoginModal();
+        if (authContainer) authContainer.classList.remove('hidden');
+        if (appContainer) appContainer.classList.add('hidden');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        
+        // مسح النماذج
+        this.clearForms();
     }
     
     /**
-     * عرض التطبيق
+     * إظهار التطبيق الرئيسي
      */
     showApp() {
-        console.log('عرض التطبيق الرئيسي');
-        const app = document.getElementById('app');
-        if (app) {
-            app.style.display = 'grid';
-        }
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const loadingScreen = document.getElementById('loading-screen');
         
-        // إخفاء جميع نوافذ المصادقة
-        this.hideAllModals();
-    }
-    
-    /**
-     * عرض نافذة تسجيل الدخول
-     */
-    showLoginModal() {
-        this.hideAllModals();
-        const modal = document.getElementById('login-modal');
-        if (modal) {
-            modal.classList.add('active');
-            
-            // التركيز على حقل البريد الإلكتروني
-            setTimeout(() => {
-                const emailInput = document.getElementById('login-email');
-                if (emailInput) {
-                    emailInput.focus();
-                }
-            }, 100);
+        if (authContainer) authContainer.classList.add('hidden');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (appContainer) appContainer.classList.remove('hidden');
+        
+        // تحديث معلومات المستخدم في الواجهة
+        this.updateUserInterface();
+        
+        // تحميل بيانات التطبيق
+        if (window.app) {
+            window.app.loadData();
         }
     }
     
     /**
-     * إخفاء نافذة تسجيل الدخول
+     * تحديث واجهة المستخدم
      */
-    hideLoginModal() {
-        const modal = document.getElementById('login-modal');
-        if (modal) {
-            modal.classList.remove('active');
+    updateUserInterface() {
+        const userNameElement = document.getElementById('user-name');
+        
+        if (userNameElement && this.currentUser) {
+            userNameElement.textContent = this.currentUser.name;
         }
     }
     
     /**
-     * عرض نافذة إنشاء الحساب
+     * مسح النماذج
      */
-    showRegisterModal() {
-        this.hideAllModals();
-        const modal = document.getElementById('register-modal');
-        if (modal) {
-            modal.classList.add('active');
-            
-            // التركيز على حقل الاسم
-            setTimeout(() => {
-                const nameInput = document.getElementById('register-name');
-                if (nameInput) {
-                    nameInput.focus();
-                }
-            }, 100);
-        }
-    }
-    
-    /**
-     * إخفاء نافذة إنشاء الحساب
-     */
-    hideRegisterModal() {
-        const modal = document.getElementById('register-modal');
-        if (modal) {
-            modal.classList.remove('active');
-        }
-    }
-    
-    /**
-     * إخفاء جميع النوافذ المنبثقة
-     */
-    hideAllModals() {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            modal.classList.remove('active');
+    clearForms() {
+        const forms = document.querySelectorAll('#auth-container form');
+        forms.forEach(form => {
+            form.reset();
+            this.setFormLoading(form, false);
         });
     }
     
     /**
-     * تحديث معلومات المستخدم
-     */
-    updateUserProfile(userData) {
-        if (this.currentUser) {
-            this.currentUser = { ...this.currentUser, ...userData };
-            storage.setCurrentUser(this.currentUser);
-            
-            // تحديث الواجهة
-            if (window.app) {
-                app.updateUserInfo();
-            }
-            
-            this.showSuccess('تم تحديث الملف الشخصي بنجاح');
-        }
-    }
-    
-    /**
-     * تغيير كلمة المرور
-     */
-    async changePassword(currentPassword, newPassword) {
-        if (!currentPassword || !newPassword) {
-            this.showError('يرجى ملء جميع الحقول');
-            return false;
-        }
-        
-        if (newPassword.length < 6) {
-            this.showError('كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل');
-            return false;
-        }
-        
-        try {
-            // في التطبيق الحقيقي، هذا سيكون استدعاء API
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            this.showSuccess('تم تغيير كلمة المرور بنجاح');
-            return true;
-            
-        } catch (error) {
-            console.error('خطأ في تغيير كلمة المرور:', error);
-            this.showError('فشل في تغيير كلمة المرور');
-            return false;
-        }
-    }
-    
-    /**
-     * التحقق من صلاحيات المستخدم
-     */
-    hasPermission(permission) {
-        if (!this.currentUser) {
-            return false;
-        }
-        
-        // المدير له جميع الصلاحيات
-        if (this.currentUser.role === 'admin') {
-            return true;
-        }
-        
-        // تحديد الصلاحيات حسب الدور
-        const permissions = {
-            'editor': ['read', 'write', 'edit'],
-            'viewer': ['read']
-        };
-        
-        const userPermissions = permissions[this.currentUser.role] || [];
-        return userPermissions.includes(permission);
-    }
-    
-    /**
-     * الحصول على معلومات المستخدم الحالي
+     * الحصول على المستخدم الحالي
+     * @returns {Object|null} المستخدم الحالي
      */
     getCurrentUser() {
         return this.currentUser;
@@ -453,43 +441,59 @@ class AuthManager {
     
     /**
      * التحقق من حالة المصادقة
+     * @returns {boolean} true إذا كان المستخدم مسجل الدخول
      */
-    isLoggedIn() {
+    isUserAuthenticated() {
         return this.isAuthenticated && this.currentUser !== null;
     }
     
     /**
-     * عرض رسالة خطأ
+     * التحقق من صلاحيات المستخدم
+     * @param {string} permission - الصلاحية المطلوبة
+     * @returns {boolean} true إذا كان المستخدم يملك الصلاحية
      */
-    showError(message) {
-        if (window.notifications) {
-            notifications.show(message, 'error');
-        } else {
-            alert(message);
+    hasPermission(permission) {
+        if (!this.currentUser) return false;
+        
+        const userRole = this.currentUser.role || 'user';
+        
+        // صلاحيات المدير
+        if (userRole === 'admin') return true;
+        
+        // صلاحيات المحرر
+        if (userRole === 'editor') {
+            return ['read', 'write', 'edit'].includes(permission);
         }
+        
+        // صلاحيات المستخدم العادي
+        if (userRole === 'user') {
+            return ['read', 'write'].includes(permission);
+        }
+        
+        // صلاحيات المشاهد
+        if (userRole === 'viewer') {
+            return permission === 'read';
+        }
+        
+        return false;
     }
     
     /**
-     * عرض رسالة نجاح
+     * تحديث بيانات المستخدم الحالي
+     * @param {Object} updates - التحديثات
      */
-    showSuccess(message) {
-        if (window.notifications) {
-            notifications.show(message, 'success');
+    updateCurrentUser(updates) {
+        if (!this.currentUser) return;
+        
+        const updatedUser = storage.updateUser(this.currentUser.id, updates);
+        if (updatedUser) {
+            this.currentUser = updatedUser;
+            storage.setCurrentUser(updatedUser);
+            this.updateUserInterface();
         }
-    }
-    
-    /**
-     * تنظيف البيانات عند إغلاق التطبيق
-     */
-    cleanup() {
-        // تنظيف أي موارد مستخدمة
-        this.hideAllModals();
     }
 }
 
-// تهيئة مدير المصادقة
-const auth = new AuthManager();
-
-// تصدير للاستخدام العام
-window.auth = auth;
+// إنشاء مثيل واحد من مدير المصادقة
+window.auth = new AuthManager();
 
