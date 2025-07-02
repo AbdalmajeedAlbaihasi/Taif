@@ -636,6 +636,37 @@ class StorageManager {
             return false;
         }
     }
+    
+    /**
+     * الحصول على قائمة المستخدمين المسجلين
+     */
+    getRegisteredUsers() {
+        return this.getItem('registered_users') || [];
+    }
+    
+    /**
+     * حفظ قائمة المستخدمين المسجلين
+     */
+    setRegisteredUsers(users) {
+        return this.setItem('registered_users', users);
+    }
+    
+    /**
+     * إضافة مستخدم جديد للقائمة
+     */
+    addRegisteredUser(user) {
+        const users = this.getRegisteredUsers();
+        users.push(user);
+        return this.setRegisteredUsers(users);
+    }
+    
+    /**
+     * البحث عن مستخدم بالبريد الإلكتروني
+     */
+    findUserByEmail(email) {
+        const users = this.getRegisteredUsers();
+        return users.find(user => user.email === email);
+    }
 }
 
 // تهيئة مدير التخزين

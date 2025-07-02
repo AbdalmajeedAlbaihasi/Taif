@@ -184,48 +184,66 @@ class AuthManager {
     }
     
     /**
-     * مصادقة المستخدم (محاكاة)
+     * مصادقة المستخدم (محاكاة مع تحقق)
      */
     async authenticateUser(email, password) {
         // محاكاة تأخير الشبكة
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // في التطبيق الحقيقي، هذا سيكون استدعاء API
-        // هنا نقبل أي بريد إلكتروني وكلمة مرور للتجربة
+        // التحقق من وجود المستخدم في قاعدة البيانات المحلية
+        const registeredUsers = storage.getRegisteredUsers() || [];
+        const user = registeredUsers.find(u => u.email === email && u.password === password);
         
-        const user = {
-            id: utils.generateId(),
-            name: this.extractNameFromEmail(email),
-            email: email,
-            role: 'admin',
-            avatar: null,
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString()
-        };
+        if (user) {
+            // تحديث وقت آخر دخول
+            user.lastLogin = new Date().toISOString();
+            
+            // تحديث قاعدة البيانات
+            const updatedUsers = registeredUsers.map(u => u.id === user.id ? user : u);
+            storage.setRegisteredUsers(updatedUsers);
+            
+            // إرجاع نسخة من المستخدم بدون كلمة المرور
+            const { password: _, ...userWithoutPassword } = user;
+            return userWithoutPassword;
+        }
         
-        return user;
+        return null; // المستخدم غير موجود أو كلمة المرور خاطئة
     }
     
     /**
-     * إنشاء مستخدم جديد (محاكاة)
+     * إنشاء مستخدم جديد (محاكاة مع تحقق)
      */
     async createUser(name, email, password) {
         // محاكاة تأخير الشبكة
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // في التطبيق الحقيقي، هذا سيكون استدعاء API
+        // التحقق من عدم وجود المستخدم مسبقاً
+        const registeredUsers = storage.getRegisteredUsers() || [];
+        const existingUser = registeredUsers.find(u => u.email === email);
         
+        if (existingUser) {
+            throw new Error('البريد الإلكتروني مستخدم مسبقاً');
+        }
+        
+        // إنشاء مستخدم جديد
         const user = {
             id: utils.generateId(),
             name: name,
             email: email,
+            password: password, // في التطبيق الحقيقي يجب تشفير كلمة المرور
             role: 'admin',
             avatar: null,
             createdAt: new Date().toISOString(),
             lastLogin: new Date().toISOString()
         };
         
-        return user;
+        // إضافة المستخدم لقاعدة البيانات المحلية
+        registeredUsers.push(user);
+        storage.setRegisteredUsers(registeredUsers);
+        
+        // إرجاع نسخة من المستخدم بدون كلمة المرور
+        const { password: _, ...userWithoutPassword } = user;
+        return userWithoutPassword;
     }
     
     /**

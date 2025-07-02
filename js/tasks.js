@@ -695,6 +695,14 @@ class TaskManager {
     }
     
     /**
+     * الحصول على جميع المهام (اسم بديل)
+     * @returns {Array} قائمة المهام
+     */
+    getAllTasks() {
+        return this.tasks;
+    }
+    
+    /**
      * البحث في المهام
      * @param {string} query - نص البحث
      * @returns {Array} نتائج البحث

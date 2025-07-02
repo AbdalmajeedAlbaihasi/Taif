@@ -560,6 +560,14 @@ class ProjectManager {
     }
     
     /**
+     * الحصول على جميع المشاريع (اسم بديل)
+     * @returns {Array} قائمة المشاريع
+     */
+    getAllProjects() {
+        return this.projects;
+    }
+    
+    /**
      * البحث في المشاريع
      * @param {string} query - نص البحث
      * @returns {Array} نتائج البحث

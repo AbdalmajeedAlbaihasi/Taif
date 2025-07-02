@@ -183,10 +183,15 @@ class ProjectManager {
      */
     bindNavigationEvents() {
         const navLinks = document.querySelectorAll('.nav-link[data-view]');
+        console.log('تم العثور على', navLinks.length, 'روابط تنقل');
+        
         navLinks.forEach(link => {
+            const view = link.getAttribute('data-view');
+            console.log('ربط حدث للرابط:', view);
+            
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const view = link.getAttribute('data-view');
+                console.log('تم النقر على رابط:', view);
                 this.showView(view);
             });
         });
@@ -399,9 +404,15 @@ class ProjectManager {
      * عرض صفحة معينة
      */
     showView(viewName) {
+        console.log('محاولة عرض الصفحة:', viewName);
+        
         // إخفاء جميع الصفحات
         const views = document.querySelectorAll('.view');
-        views.forEach(view => view.classList.remove('active'));
+        console.log('تم العثور على', views.length, 'صفحات');
+        views.forEach(view => {
+            view.classList.remove('active');
+            console.log('إخفاء الصفحة:', view.id);
+        });
         
         // إزالة الحالة النشطة من جميع روابط التنقل
         const navLinks = document.querySelectorAll('.nav-link');
@@ -409,15 +420,23 @@ class ProjectManager {
         
         // عرض الصفحة المطلوبة
         const targetView = document.getElementById(`${viewName}-view`);
+        console.log('البحث عن الصفحة:', `${viewName}-view`);
+        
         if (targetView) {
             targetView.classList.add('active');
             this.currentView = viewName;
+            console.log('تم عرض الصفحة:', viewName);
+        } else {
+            console.error('لم يتم العثور على الصفحة:', `${viewName}-view`);
         }
         
         // تفعيل رابط التنقل المناسب
         const activeNavLink = document.querySelector(`[data-view="${viewName}"]`);
         if (activeNavLink) {
             activeNavLink.classList.add('active');
+            console.log('تم تفعيل رابط التنقل:', viewName);
+        } else {
+            console.error('لم يتم العثور على رابط التنقل:', viewName);
         }
         
         // إغلاق الشريط الجانبي للجوال
